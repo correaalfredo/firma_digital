@@ -15,7 +15,7 @@ const AppUtilsContext = createContext<AppUtilsType | undefined>(undefined)
 export const AppUtilsProvider = ({children}: {children: React.ReactNode}) => {
    
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false)
-    const [authToken, setAuthToken] = useState<null|string>(null)
+    const [authToken, setAuthToken] = useState<string | null>(null)
     const [userProfile, setUserProfile] = useState<null|string>(null);
 
     useEffect( () => {
