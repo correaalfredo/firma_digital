@@ -10,13 +10,20 @@ interface AppUtilsType{
     setUserProfile: (state: string | null) => void      
 }
 
+type UserProfile = {
+  name: string | null;
+  email: string | null;
+  gender: string | null;
+  phone: string | null;
+};
+
 const AppUtilsContext = createContext<AppUtilsType | undefined>(undefined)
 
 export const AppUtilsProvider = ({children}: {children: React.ReactNode}) => {
    
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [authToken, setAuthToken] = useState<string | null>(null);
-    const [userProfile, setUserProfile] = useState<string | null>(null);
+    const [userProfile, setUserProfile] = useState<UserProfile | string | null>(null);
 
     useEffect( () => {
 
