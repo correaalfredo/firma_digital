@@ -13,7 +13,7 @@ export default function Dashboard(){
 
     const [previewImage, serPreviewImage] = useState<null>(null)
     const [products, serProducts] = useState<null>(null)
-    const [userId, setUserId] = useState<null>(null);
+    const [userId, setUserId] = useState<null | string>(null);
 
     const {setAuthToken, setIsLoggedIn, isLoggedIn, setUserProfile} = myAppHook()
     const router = useRouter();
@@ -30,7 +30,7 @@ export default function Dashboard(){
             }
             if(data.session?.access_token){
                 console.log(data);
-                setAuthToken(data.session.access_token);    
+                setAuthToken(data.session?.access_token);    
                 setUserId(data.session?.user.id);
                 localStorage.setItem("access_token", data.session?.access_token);
                 setIsLoggedIn(true);

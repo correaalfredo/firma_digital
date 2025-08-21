@@ -5,18 +5,18 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 interface AppUtilsType{
     isLoggedIn: boolean   
     setIsLoggedIn: (state:boolean) => void      
-    setAuthToken: (state:null) => void,
-    userProfile: null,
-    setUserProfile: (state:null) => void      
+    setAuthToken: (state: string | null) => void
+    //userProfile: null
+    setUserProfile: (state: string | null) => void      
 }
 
 const AppUtilsContext = createContext<AppUtilsType | undefined>(undefined)
 
 export const AppUtilsProvider = ({children}: {children: React.ReactNode}) => {
    
-    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false)
-    const [authToken, setAuthToken] = useState<string | null>(null)
-    const [userProfile, setUserProfile] = useState<null|string>(null);
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+    const [authToken, setAuthToken] = useState<string | null>(null);
+    const [userProfile, setUserProfile] = useState<string | null>(null);
 
     useEffect( () => {
 
@@ -25,7 +25,9 @@ export const AppUtilsProvider = ({children}: {children: React.ReactNode}) => {
         if(token){
             setAuthToken(token);
             setIsLoggedIn(true);
-            setUserProfile(JSON.parse(userProfile))
+            if (userProfile) {
+                setUserProfile(JSON.parse(userProfile));
+            }
         }
 
     }, [] )
