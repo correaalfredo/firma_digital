@@ -30,7 +30,7 @@ export default function Dashboard(){
             }
             if(data.session?.access_token){
                 console.log(data);
-                setAuthToken(data.session?.access_token);    
+                setAuthToken(data.session.access_token);    
                 setUserId(data.session?.user.id);
                 localStorage.setItem("access_token", data.session?.access_token);
                 setIsLoggedIn(true);
