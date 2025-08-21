@@ -6,7 +6,7 @@ interface AppUtilsType{
     isLoggedIn: boolean   
     setIsLoggedIn: (state:boolean) => void      
     setAuthToken: (state: string | null) => void
-    //userProfile: null
+    userProfile: string | null
     setUserProfile: (state: string | null) => void      
 }
 
