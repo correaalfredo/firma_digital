@@ -22,7 +22,7 @@ const Navbar = () => {
 
     return <>
         <nav className="navbar navbar-expand-lg px-4" style={ { backgroundColor: "#343a40" } }>
-            <Link className="navbar-brand fw-bold text-white" href="/">SupaNext</Link>
+            <Link className="navbar-brand fw-bold text-white" href="/">Firma Digital de Recibos</Link>
 
             {
                 isLoggedIn ? (
