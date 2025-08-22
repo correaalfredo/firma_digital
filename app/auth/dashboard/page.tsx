@@ -183,7 +183,7 @@ export default function Dashboard(){
             </div>
         
              
-            <div className="col-md-7">
+            <div className="col-md-7 mt-5">
                 <h3>Recibos de sueldos enviados</h3>
                 <table className="table table-bordered">
                 <thead>
@@ -216,7 +216,7 @@ export default function Dashboard(){
                                     <td>
                                         <button className="btn btn-primary btn-sm">Edit</button>
                                         <button className="btn btn-danger btn-sm" style={ {
-                                            marginLeft: "10px"
+                                            marginLeft: "0px"
                                         } }>Delete</button>
                                 </td>
                             </tr>
