@@ -11,13 +11,14 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
+import Swal from "sweetalert2";
 
 interface ProductType {
-  id?: number,
+  id: number,
   title: string,
-  content?: string,
+  content: string,
   cost: string,
-  banner_image?: string | File | null
+  banner_image: string | File | null
 }
 
 
@@ -32,8 +33,9 @@ export default function Dashboard(){
     const [previewImage, setPreviewImage] = useState<null>(null)
     const [products, setProducts] = useState<ProductType | null>(null)
     const [userId, setUserId] = useState<null | string>(null);
+    const [editId, setEditId] = useState(null);
 
-    const {setAuthToken, setIsLoggedIn, isLoggedIn, setUserProfile} = myAppHook()
+    const {setAuthToken, setIsLoggedIn, isLoggedIn, setUserProfile, setIsLoading} = myAppHook()
     const router = useRouter();
 
     const { register, reset, setValue, handleSubmit, formState: { 
@@ -52,6 +54,8 @@ export default function Dashboard(){
                 router.push("/auth/login");
                 return;   
             }
+
+            setIsLoading(true)
             if(data.session?.access_token){
                 console.log(data);
                 setAuthToken(data.session?.access_token);    
@@ -59,22 +63,28 @@ export default function Dashboard(){
                 localStorage.setItem("access_token", data.session?.access_token);
                 setIsLoggedIn(true);
                 setUserProfile({
-                    name: data.session.user?.user_metadata.fullName,
-                    email: data.session.user?.user_metadata.email,
-                    gender: data.session.user?.user_metadata.gender,
+                    name: data.session.user?.user_metadata.name,
+                    lastName: data.session.user?.user_metadata.lastName,
+                    cuil: data.session.user?.user_metadata.cuil,
+                    empleador: data.session.user?.user_metadata.empleador,
+                    email: data.session.user?.user_metadata.email,                    
                     phone: data.session.user?.user_metadata.phone,
+                    isAdmin: data.session.user?.user_metadata.isAdmin,
                 });
                 //toast.success("User logged in successfully");
                 localStorage.setItem("user_profile", JSON.stringify ({
-                    name: data.session.user?.user_metadata.fullName,
-                    email: data.session.user?.user_metadata.email,
-                    gender: data.session.user?.user_metadata.gender,
+                    name: data.session.user?.user_metadata.name,
+                    lastName: data.session.user?.user_metadata.lastName,
+                    cuil: data.session.user?.user_metadata.cuil,
+                    empleador: data.session.user?.user_metadata.empleador,
+                    email: data.session.user?.user_metadata.email,                    
                     phone: data.session.user?.user_metadata.phone,
+                    isAdmin: data.session.user?.user_metadata.isAdmin,
                 }))
 
                 fetchProductsFromTable(data.session.user.id)
-            }
-            
+            }      
+             setIsLoading(false)      
         }       
 
         handleLoginSession()
@@ -104,7 +114,9 @@ export default function Dashboard(){
    // Form Submit
     const onFormSubmit = async (formData: any) => {
 
-        let imagePath = null;
+        setIsLoading(true)
+
+        let imagePath = formData.banner_image;
 
         if(formData.banner_image instanceof File){
 
@@ -112,30 +124,96 @@ export default function Dashboard(){
             if(!imagePath) return;
         }
 
-       const {data, error} = await supabase.from("products").insert({
-            ...formData,
-            user_id: userId,
-            banner_image: imagePath
-        });
+        if(editId){
+           // Edit Operation
+            const { 
+                data, error
+            } = await supabase.from("products").update({
+                ...formData,
+                banner_image: imagePath
+            }).match({
+                id: editId,
+                user_id: userId
+            })
 
-        if(error){
-            toast.error("Failed to Add product")
-        } else { 
-            toast.success("Successfully Product has been created!");
+            if(error){
+                toast.error("Failed to update product data")
+            } else{
+                toast.success("Producto has been updated successufully");
+            }
+        } else{
+            //Add Operation
+                const {data, error} = await supabase.from("products").insert({
+                ...formData,
+                user_id: userId,
+                banner_image: imagePath
+            });
+
+            if(error){ 
+                toast.error("Failed to Add product")
+            } else { 
+                toast.success("Successfully Product has been created!");
+            }
+            reset()
+
         }
 
-        reset()
         setPreviewImage(null)
+        fetchProductsFromTable(userId!)
+        setIsLoading(false)
     }
 
     const fetchProductsFromTable = async (userId: string) => {
 
+        setIsLoading(true)
         const {data, error} = await supabase.from("products").select("*").eq("user_id", userId);
 
         if(data){
             setProducts(data)
         }
+
+        setIsLoading(false)
     }
+
+    //Edit Data
+    const handleEditData = (product: ProductType) => {
+
+        setValue("title", product.title)
+        setValue("content", product.content)
+        setValue("cost", product.cost)
+        setValue("banner_image", product.banner_image)
+        setPreviewImage(product.banner_image)
+        setEditId(product.id!)
+    }
+
+    // Delete Product Operation   
+    const handleDeleteProduct = (id: number) => {
+
+        Swal.fire({
+            title: "Are you sure?",
+            text: "You won't be able to revert this!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Yes, delete it!"
+            }).then(async (result) => {
+            if (result.isConfirmed) {
+                const {data, error} = await supabase.from("products").delete().match({
+                    id: id,
+                    user_id: userId
+                })
+
+                if(error){
+                    toast.error("Failed to delete product")
+                } else{
+                   toast.success("Product deleted successfully")
+                   fetchProductsFromTable(userId!)
+                }                
+            }
+            });
+
+    } 
 
     return <>
 
@@ -145,7 +223,7 @@ export default function Dashboard(){
             <div className="row">
             
             <div className="col-md-5">
-                <h3>Cargar recibo</h3>
+                <h3>{editId ? "Editar usuario" : "Cargar usuario"}</h3>
                 <form onSubmit={handleSubmit(onFormSubmit)}>
                 <div className="mb-3">
                     <label className="form-label">CUIL</label>
@@ -177,7 +255,7 @@ export default function Dashboard(){
                     <small className="text-danger"></small>
                 </div>
                 <button type="submit" className="btn btn-success w-100">
-                    Cargar
+                    { editId  ? "Actualizar usuario" : "Añadir usuario"}
                 </button>
                 </form>
             </div>
@@ -214,10 +292,10 @@ export default function Dashboard(){
                                         
                                     </td>
                                     <td>
-                                        <button className="btn btn-primary btn-sm">Edit</button>
+                                        <button className="btn btn-primary btn-sm" onClick={ () => handleEditData(singleProduct) }>Edit</button>
                                         <button className="btn btn-danger btn-sm" style={ {
                                             marginLeft: "0px"
-                                        } }>Delete</button>
+                                        } } onClick={ () => handleDeleteProduct(singleProduct.id!) }>Delete</button>
                                 </td>
                             </tr>
                         ) )   : (
@@ -234,7 +312,7 @@ export default function Dashboard(){
             </div>
         </div>
 
-        <Footer />                
+                       
             
     </>
 }

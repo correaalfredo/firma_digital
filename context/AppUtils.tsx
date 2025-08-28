@@ -1,22 +1,27 @@
 "use client";
 
+import Loader from "@/components/Loader";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface AppUtilsType{
     isLoggedIn: boolean   
     setIsLoggedIn: (state:boolean) => void      
-    setAuthToken: (state:null) => void,
+    setAuthToken: (state:string | null) => void,
     userProfile: null,
-    setUserProfile: (state:null) => void      
+    setUserProfile: (state:any | null) => void,     
+    setIsLoading: (state:boolean) => void      
 }
 
 const AppUtilsContext = createContext<AppUtilsType | undefined>(undefined)
 
 export const AppUtilsProvider = ({children}: {children: React.ReactNode}) => {
+
+    
    
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [authToken, setAuthToken] = useState<string | null>(null);
-    const [userProfile, setUserProfile] = useState<null|string>(null);
+    const [userProfile, setUserProfile] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false)
 
     useEffect( () => {
 
@@ -33,8 +38,9 @@ export const AppUtilsProvider = ({children}: {children: React.ReactNode}) => {
     }, [] )
 
     return (
-        <AppUtilsContext.Provider value={{ isLoggedIn, setAuthToken, setIsLoggedIn, userProfile, setUserProfile }}>
-            {children}
+        <AppUtilsContext.Provider value={{ isLoggedIn, setAuthToken, setIsLoggedIn, userProfile, 
+        setUserProfile, setIsLoading }}>
+            { isLoading ? <Loader /> : children }
         </AppUtilsContext.Provider>
     );
 }

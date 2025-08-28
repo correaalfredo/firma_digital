@@ -16,18 +16,18 @@ const Navbar = () => {
         setIsLoggedIn(false);
         setAuthToken(null);
         await supabase.auth.signOut();
-        toast.success("user logged out successfully");
+        toast.success("Has cerrado sesión exitosamente");
         router.push("/auth/login");
     }
 
     return <>
-        <nav className="navbar navbar-expand-lg px-4" style={ { backgroundColor: "#343a40" } }>
+        <nav className="navbar navbar-expand-lg px-4" style={ { backgroundColor: "#212529" } }>
             <Link className="navbar-brand fw-bold text-white" href="/">Firma Digital de Recibos</Link>
 
             {
                 isLoggedIn ? (
                 <div className="ms-auto">
-                    <Link className="me-3 text-white text-decoration-none" href="/auth/dashboard">Dashboard</Link>
+                    {/* <Link className="me-3 text-white text-decoration-none" href="/auth/dashboard">Dashboard</Link> */}
                     <Link className="me-3 text-white text-decoration-none" href="/auth/profile">Profile</Link>
                     <button className="btn btn-danger" onClick={ handleUserLogout }>Logout</button>
                 </div>

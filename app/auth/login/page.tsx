@@ -12,14 +12,14 @@ import {useForm} from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup";
 
 const formSchema = yup.object().shape({
-  email: yup.string().required("Email is required").email("Invalid Email value"),
-  password: yup.string().required("Password is required")
+  email: yup.string().required("Ingrese su Email").email("Dirección de correo electrónico no válida"),
+  password: yup.string().required("Ingrese su Password")
 });
 
 export default function Login(){
 
     const router = useRouter();
-    const { isLoggedIn, setIsLoggedIn, setAuthToken } = myAppHook();
+    const { isLoggedIn, setIsLoggedIn, setAuthToken, setIsLoading } = myAppHook();
 
     const {
         register,
@@ -33,8 +33,8 @@ export default function Login(){
 
     useEffect( () => {
 
-        if(isLoggedIn){
-            router.push("/auth/dashboard");
+        if(isLoggedIn){ router.push("/auth/profile");
+            /////////////////////////////////////////////////////router.push("/auth/dashboard");
             return;
         }
     }, [isLoggedIn])
@@ -55,6 +55,8 @@ export default function Login(){
 
     const onSubmit = async (formData: any) => {
 
+        setIsLoading(true)
+
         const { email, password } = formData;
 
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -63,50 +65,84 @@ export default function Login(){
 
         
         if (error) {
-            toast.error("Invalid login details")
+            toast.error("Usuario o contraseña incorrectos")
+            setIsLoading(false) 
         } else {
             if(data.session?.access_token){
                 //console.log(data);
                 setAuthToken(data.session?.access_token);    
                 localStorage.setItem("access_token", data.session?.access_token);
                 setIsLoggedIn(true);
-                toast.success("User logged in successfully");
+                setIsLoading(false)
+                toast.success("Inicio de sesión exitoso");                
             }
         }
    }
 
+   const handleRegisterRedirect = () => {
+        router.push("/auth/register");
+   }
+
     return <>
 
-        <Navbar />
+        {/* <Navbar /> */}
 
-        <div className="container mt-5">
-            <h2 className="text-center">Login</h2>
-            <form onSubmit={ handleSubmit(onSubmit) } className="w-50 mx-auto mt-3">
-                <div className="mb-3">
-                <label className="form-label">Email</label>
-                <input type="email" className="form-control" { ...register("email") } />
-                <p className="text-danger"> {errors.email?.message} </p>
-                </div>
+<div className="container-fluid d-flex align-items-center bg-light mt-5">
+  <div className="row w-100"> 
+    {/* Columna izquierda con logo / imagen */}
+    <div className="col-md-6 d-flex flex-column justify-content-center align-items-center text-center p-5">
+      <img src="/logo_estudio.png" alt="Mi Logo" style={{ maxWidth: "200px" }} />
+      <h2 className="mt-3 text-primary">Firma digital de recibos</h2>
+      <p className="text-muted">
+        Firma tus recibos en segundos, con total seguridad.
+      </p>
+    </div>
 
-                <div className="mb-3">
-                <label className="form-label">Password</label>
-                <input type="password" className="form-control" { ...register("password") } />
-                <p className="text-danger"> {errors.password?.message} </p>
-                </div>
+    {/* Columna derecha con el formulario */}
+    <div className="col-md-6 d-flex justify-content-center align-items-center">
+      <div className="card shadow-lg p-4" style={{ maxWidth: "400px", width: "100%" }}>
+        <h3 className="text-center mb-4">Iniciar sesión</h3>
 
-                <button type="submit" className="btn btn-primary w-100">Login</button>
-            </form>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="mb-3">
+            <label className="form-label">Email</label>
+            <input type="email" className="form-control" {...register("email")} />
+            <p className="text-danger">{errors.email?.message}</p>
+          </div>
 
-            <div className="text-center mt-3">
-                <button className="btn btn-danger mx-2" onClick={ () => handleSocialOauth("google") }>Google</button>
-                {/* <button className="btn btn-dark mx-2">GitHub</button> */}
-            </div>
+          <div className="mb-3"> 
+            <label className="form-label">Contraseña</label>
+            <input type="password" className="form-control" {...register("password")} />
+            <p className="text-danger">{errors.password?.message}</p>
+          </div>
 
-            <p className="text-center mt-3">
-                Don't have an account? <a href="/auth/register">Register</a>
-            </p>
-        </div>    
+          <button type="submit" className="btn btn-primary w-100">
+            Ingresar
+          </button>
+        </form>
 
-        <Footer />
+        <p className="text-center mt-3">
+          <a 
+            href="/reset-password" 
+            className="text-sm text-blue-500 hover:underline block mb-2"
+          >
+            ¿Has olvidado la contraseña?
+        </a>  
+        </p> 
+
+        <p className="text-center mt-1">
+          ¿No tienes una cuenta?{" "}
+          <a onClick={handleRegisterRedirect} style={{ fontWeight: "bold", cursor: "pointer" }} className="text-blue-500 hover:underline">
+            Registrarse
+          </a>
+        </p>
+
+
+      </div>
+    </div>
+  </div>
+</div>
+
+        
     </>
 }

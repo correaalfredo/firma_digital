@@ -3,6 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --bs-body-bg: #08f9fa;
 }
 
 @theme inline {
@@ -35,4 +36,9 @@ body {
 
 .navbar a {
   color: white !important;
+}
+
+html, body, #__next {
+  height: 100%;
+  margin: 0;
 }

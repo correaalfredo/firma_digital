@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "bootstrap/dist/css/bootstrap.min.css"
 import { AppUtilsProvider } from "@/context/AppUtils";
 import { Toaster } from "react-hot-toast";
+import Footer from "@/components/Footer";
+import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -15,12 +17,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      {/* Estructura flex de 100vh */}
+      <body className="d-flex flex-column min-vh-100 bg-light">
         <AppUtilsProvider>
-          <Toaster />
-          {children}
-        </AppUtilsProvider>        
-      </body>
+       
+          <Toaster />          
+
+          {/* Contenido principal (crece para empujar el footer abajo) */}
+          <main className="flex-grow-1 container">
+            {children}
+          </main>
+
+          <Footer />
+
+        </AppUtilsProvider>
+      </body> 
     </html>
   );
 }
