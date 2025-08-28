@@ -59,7 +59,7 @@ export default function Register(){
         if(error){
             toast.error("Failed to register user")
         } else{
-            toast.success("Usuario registrado con éxito");
+            toast.success("Usuario registrado con éxito! Revisa tu correo y confirma tu email (Supabase Auth)", { duration: 4000 });
             setIsLoading(false)
             router.push("/auth/login");
         }        

@@ -65,7 +65,7 @@ export default function Login(){
 
         
         if (error) {
-            toast.error("Usuario o contraseña incorrectos")
+            toast.error("Usuario o contraseña incorrectos o Email aún no validado!")
             setIsLoading(false) 
         } else {
             if(data.session?.access_token){
