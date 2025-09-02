@@ -230,6 +230,8 @@ export default function Dashboard(){
 
     } 
 
+    const { userProfile } = myAppHook();
+    
     return <>
 
         <Navbar />
@@ -238,103 +240,102 @@ export default function Dashboard(){
             <div className="row">
             
             <div className="col-md-4">
-                <h3>{editId ? "Editar recibo de sueldo" : "Cargar recibo de sueldo"}</h3>
-                <form onSubmit={handleSubmit(onFormSubmit)}>
-                
-               {/*  <div className="mb-3">
-                    <label className="form-label">CUIL</label>
-                    <input type="text" 
-                        className="form-control"
-                        placeholder="Ingrese CUIL" 
-                        { ...register("title") 
-                        } />
-                    <small className="text-danger">{ errors.title?.message }</small>
-                </div> */}
-               {/*  <div className="mb-3">
-                    <label className="form-label">Nombre y Apellido</label>
-                    <textarea className="form-control" { ...register("content") } ></textarea>
-                    <small className="text-danger">{ errors.content?.message }</small>
-                </div> */}
+                {userProfile?.isAdmin ? (
+                    <>
+                        <h3>{editId ? "Editar recibo de sueldo" : "Cargar recibo de sueldo"}</h3>
+                        <form onSubmit={handleSubmit(onFormSubmit)}>
+                        <div className="mb-3">
+                            <label className="form-label">CUIL</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Ingrese CUIL"
+                                {...register("title")}
+                                onBlur={async (e) => {
+                                const cuil = e.target.value;                       
+                                if (cuil.length === 11) {
+                                    // Buscar en la tabla de empleados
+                                    const { data, error } = await supabase
+                                    .from("products")
+                                    .select("content")
+                                    .eq("title", cuil)
+                                    .limit(1)
+                                    .single();
 
-                <div className="mb-3">
-                    <label className="form-label">CUIL</label>
-                    <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Ingrese CUIL"
-                        {...register("title")}
-                        onBlur={async (e) => {
-                        const cuil = e.target.value;                       
-                        if (cuil.length === 11) {
-                            // Buscar en la tabla de empleados
-                            const { data, error } = await supabase
-                            .from("products")
-                            .select("content")
-                            .eq("title", cuil)
-                            .limit(1)
-                            .single();
-
-                            if (error) {  
-                                toast.error("CUIL no encontrado");
-                                setValue("content", ""); // limpio si no existe
-                            } else {
-                                // Concatenar nombre y apellido
-                                const nombreCompleto = `${data.content}`;
-                                setValue("content", nombreCompleto);
-                            }
-                        }
-                        }}
-                    />
-                    <small className="text-danger">{errors.title?.message}</small>
-                    </div>
-
-                    <div className="mb-3">
-                    <label className="form-label">Nombre y Apellido</label>
-                    <input
-                        type="text"
-                        className="form-control"
-                        {...register("content")}
-                        readOnly
-                    />
-                    <small className="text-danger">{errors.content?.message}</small>
-                    </div>
- 
-
-
-
-                <div className="mb-3">
-                <label className="form-label">Periodo</label>
-                <input
-                    type="month"
-                    className="form-control"
-                    {...register("cost")}
-                />
-                <small className="text-danger">{ errors.cost?.message }</small>
-                </div>
-                <div className="mb-3">
-                    <label className="form-label">Recibo de sueldo (PDF)</label>
-
-                        <input
-                            type="file"
-                            className="form-control"
-                            onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                    setValue("banner_image", file, { shouldValidate: true }); // <-- importante
+                                    if (error) {  
+                                        toast.error("CUIL no encontrado");
+                                        setValue("content", ""); // limpio si no existe
+                                    } else {
+                                        // Concatenar nombre y apellido
+                                        const nombreCompleto = `${data.content}`;
+                                        setValue("content", nombreCompleto);
+                                    }
                                 }
-                            }}
+                                }}
+                            />
+                            <small className="text-danger">{errors.title?.message}</small>
+                            </div>
+
+                            <div className="mb-3">
+                            <label className="form-label">Nombre y Apellido</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                {...register("content")}
+                                readOnly
+                            />
+                            <small className="text-danger">{errors.content?.message}</small>
+                            </div>
+        
+
+
+
+                        <div className="mb-3">
+                        <label className="form-label">Periodo</label>
+                        <input
+                            type="month"
+                            className="form-control"
+                            {...register("cost")}
                         />
-                    <small className="text-danger">{ errors.banner_image?.message }</small>
-                </div>
-                <button type="submit" className="btn btn-success w-100 mb-5">
-                    { editId  ? "Actualizar carga" : "Cargar"}
-                </button>
-                </form>
+                        <small className="text-danger">{ errors.cost?.message }</small>
+                        </div>
+                        <div className="mb-3">
+                            <label className="form-label">Recibo de sueldo (PDF)</label>
+
+                                <input
+                                    type="file"
+                                    className="form-control"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            setValue("banner_image", file, { shouldValidate: true }); // <-- importante
+                                        }
+                                    }}
+                                />
+                            <small className="text-danger">{ errors.banner_image?.message }</small>
+                        </div>
+                        <button type="submit" className="btn btn-success w-100 mb-5">
+                            { editId  ? "Actualizar carga" : "Cargar"}
+                        </button>
+                        </form> 
+                    </>
+                    ) : (
+                        <div className="mb-3">
+                             <h5> Nombre: {userProfile?.name} { userProfile?.lastName }</h5> 
+                             <h5> CUIL: {userProfile?.cuil}</h5> 
+                        </div>
+                    )
+                }
             </div>
         
              
             <div className="col-md-8 mt-1 table-responsive">
-                <h3>Recibos de sueldos enviados</h3>
+                {userProfile?.isAdmin ? (
+                         <h3>Recibos de sueldos enviados</h3>                     
+                    ) : (<h3>Recibos de sueldos</h3>)
+                }
+
+                
                 <table className="table table-bordered">
                 <thead>
                     <tr>
@@ -363,20 +364,17 @@ export default function Dashboard(){
                                                 </a>
                                             ) : ("--")}
                                     </td>
-                                    <td className="d-flex">
-                                    <button 
-                                        className="btn btn-primary btn-sm me-2" 
-                                        onClick={() => handleEditData(singleProduct)}
-                                    >
-                                        Editar
-                                    </button>
-                                    <button 
-                                        className="btn btn-danger btn-sm" 
-                                        onClick={() => handleDeleteProduct(singleProduct.id!)}
-                                    >
-                                        Borrar
-                                    </button>
-                                    </td>
+                                    {userProfile?.isAdmin ? (
+                                            <td className="d-flex">
+                                                <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singleProduct)}>Editar</button>
+                                                <button className="btn btn-danger btn-sm" onClick={() => handleDeleteProduct(singleProduct.id!)}>Borrar</button>
+                                            </td>
+                                            ):( <td className="d-flex">
+                                                <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singleProduct)}>Descargar</button>
+                                                <button className="btn btn-danger btn-sm" onClick={() => handleDeleteProduct(singleProduct.id!)}>Comentar</button>
+                                            </td>
+                                              )
+                                    }        
                             </tr>
                         ) )   : (
                             <tr>

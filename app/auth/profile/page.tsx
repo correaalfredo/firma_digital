@@ -8,8 +8,6 @@ export default function Profile(){
 
     const { userProfile } = myAppHook();
 
-    console.log("UUUUUUUUU", userProfile)
-
     return <>
 
         <Navbar />
