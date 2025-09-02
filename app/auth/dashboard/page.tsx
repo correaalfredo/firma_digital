@@ -23,9 +23,21 @@ interface ProductType {
 
 
 const formSchema = yup.object().shape({
-  title: yup.string().required("Product title is required"),
-  content: yup.string().required("Description is required"),
-  cost: yup.string().required("Product cost is required")
+  title: yup
+    .string()
+    .required("Ingrese el CUIL del empleado")
+    .matches(/^[0-9]{11}$/, "El CUIL debe contener solo números (11 dígitos)"),  
+  /* content: yup.string().required("Description is required"), */
+  cost: yup.string().required("Ingrese el periodo de liquidación"),
+  banner_image: yup
+    .mixed()
+    .test("required", "El recibo de sueldo es obligatorio", (value) => {
+        return value instanceof File || typeof value === "string";
+    })
+    .test("fileType", "El archivo debe ser un PDF", (value) => {
+        if (value instanceof File) return value.type === "application/pdf";
+        return true; // Si ya es string (URL), no valida tipo
+    }),
 });
 
 export default function Dashboard(){
@@ -166,7 +178,10 @@ export default function Dashboard(){
     const fetchProductsFromTable = async (userId: string) => {
 
         setIsLoading(true)
-        const {data, error} = await supabase.from("products").select("*").eq("user_id", userId);
+        const {data, error} = await supabase.from("products").select("*").eq("user_id", userId)
+        .order("cost", { ascending: false  })     // descendente (último periodo arriba)
+        .order("title", { ascending: true })    // después por CUIL ascendente
+        .order("content", { ascending: true }); // después por nombre ascendente
 
         if(data){
             setProducts(data)
@@ -223,39 +238,96 @@ export default function Dashboard(){
             <div className="row">
             
             <div className="col-md-5">
-                <h3>{editId ? "Editar usuario" : "Cargar usuario"}</h3>
+                <h3>{editId ? "Editar recibo de sueldo" : "Cargar recibo de sueldo"}</h3>
                 <form onSubmit={handleSubmit(onFormSubmit)}>
-                <div className="mb-3">
+                
+               {/*  <div className="mb-3">
                     <label className="form-label">CUIL</label>
-                    <input type="text" className="form-control" { ...register("title") } />
+                    <input type="text" 
+                        className="form-control"
+                        placeholder="Ingrese CUIL" 
+                        { ...register("title") 
+                        } />
                     <small className="text-danger">{ errors.title?.message }</small>
-                </div>
-                <div className="mb-3">
+                </div> */}
+               {/*  <div className="mb-3">
                     <label className="form-label">Nombre y Apellido</label>
                     <textarea className="form-control" { ...register("content") } ></textarea>
                     <small className="text-danger">{ errors.content?.message }</small>
-                </div>
+                </div> */}
+
                 <div className="mb-3">
-                    <label className="form-label">Periodo</label>
-                    <input type="number" className="form-control" { ...register("cost") } />
-                    <small className="text-danger">{ errors.cost?.message }</small>
+                    <label className="form-label">CUIL</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Ingrese CUIL"
+                        {...register("title")}
+                        onBlur={async (e) => {
+                        const cuil = e.target.value;                       
+                        if (cuil.length === 11) {
+                            // Buscar en la tabla de empleados
+                            const { data, error } = await supabase
+                            .from("products")
+                            .select("content")
+                            .eq("title", cuil)
+                            .limit(1)
+                            .single();
+
+                            if (error) {  
+                                toast.error("CUIL no encontrado");
+                                setValue("content", ""); // limpio si no existe
+                            } else {
+                                // Concatenar nombre y apellido
+                                const nombreCompleto = `${data.content}`;
+                                setValue("content", nombreCompleto);
+                            }
+                        }
+                        }}
+                    />
+                    <small className="text-danger">{errors.title?.message}</small>
+                    </div>
+
+                    <div className="mb-3">
+                    <label className="form-label">Nombre y Apellido</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        {...register("content")}
+                        readOnly
+                    />
+                    <small className="text-danger">{errors.content?.message}</small>
+                    </div>
+ 
+
+
+
+                <div className="mb-3">
+                <label className="form-label">Periodo</label>
+                <input
+                    type="month"
+                    className="form-control"
+                    {...register("cost")}
+                />
+                <small className="text-danger">{ errors.cost?.message }</small>
                 </div>
                 <div className="mb-3">
                     <label className="form-label">Recibo de sueldo (PDF)</label>
-                    <div className="mb-2">
-                        {
-                            previewImage ? (<Image src={previewImage} alt="Preview" id="bannerPreview" width="100" height="100" />)
-                            : ""
-                        }                    
-                    </div>
-                    <input type="file" className="form-control" onChange={(event) => {
-                        setValue("banner_image", event.target.files[0]);
-                        setPreviewImage(URL.createObjectURL(event.target.files[0]));
-                    } } />
-                    <small className="text-danger"></small>
+
+                        <input
+                            type="file"
+                            className="form-control"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    setValue("banner_image", file, { shouldValidate: true }); // <-- importante
+                                }
+                            }}
+                        />
+                    <small className="text-danger">{ errors.banner_image?.message }</small>
                 </div>
                 <button type="submit" className="btn btn-success w-100">
-                    { editId  ? "Actualizar usuario" : "Añadir usuario"}
+                    { editId  ? "Actualizar carga" : "Cargar"}
                 </button>
                 </form>
             </div>
@@ -266,8 +338,10 @@ export default function Dashboard(){
                 <table className="table table-bordered">
                 <thead>
                     <tr>
-                    <th>CUIL</th>
                     <th>Periodo</th>
+                    <th>Empleador</th>   
+                    <th>CUIL</th>  
+                    <th>Empleado</th>  
                     <th>¿Firmado?</th>
                     <th>Archivo PDF</th>
                     <th>Acciones</th>
@@ -277,25 +351,35 @@ export default function Dashboard(){
                     {
                         products ?  products.map( (singleProduct, index) => (
                             <tr key={ index }>
-                                    <td>{ singleProduct.title }</td>
-                                    <td>{ singleProduct.content }</td>
                                     <td>{ singleProduct.cost }</td>
+                                    <td>{"Empleador"}</td>
+                                    <td>{ singleProduct.title }</td>
+                                    <td>{ singleProduct.content }</td> 
+                                    <td>{"No"}</td>                                                                       
                                     <td>
-                                       {
+                                       {/* {
                                             singleProduct.banner_image ? (
-                                                <Image src=  {singleProduct.banner_image} 
+                                                <Image src="/logo_pdf.png"  / * {singleProduct.banner_image} * / 
                                                 alt="Sample Product" 
                                                 width="50" 
                                                 height={ 50 } />
                                             ) : ("--")
-                                       } 
+                                       }  */}
+
+                                       <td>
+                                            {singleProduct.banner_image ? (
+                                                <a href={singleProduct.banner_image} target="_blank" rel="noopener noreferrer">
+                                                <img src="/logo_pdf.png" alt="Ver PDF" width="50" height="50" />
+                                                </a>
+                                            ) : ("--")}
+                                            </td>
                                         
                                     </td>
                                     <td>
-                                        <button className="btn btn-primary btn-sm" onClick={ () => handleEditData(singleProduct) }>Edit</button>
+                                        <button className="btn btn-primary btn-sm me-2" onClick={ () => handleEditData(singleProduct) }>Editar</button>
                                         <button className="btn btn-danger btn-sm" style={ {
                                             marginLeft: "0px"
-                                        } } onClick={ () => handleDeleteProduct(singleProduct.id!) }>Delete</button>
+                                        } } onClick={ () => handleDeleteProduct(singleProduct.id!) }>Borrar</button>
                                 </td>
                             </tr>
                         ) )   : (

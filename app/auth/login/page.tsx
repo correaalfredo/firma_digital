@@ -33,8 +33,8 @@ export default function Login(){
 
     useEffect( () => {
 
-        if(isLoggedIn){ router.push("/auth/profile");
-            /////////////////////////////////////////////////////router.push("/auth/dashboard");
+        if(isLoggedIn){ 
+            router.push("/auth/dashboard");
             return;
         }
     }, [isLoggedIn])

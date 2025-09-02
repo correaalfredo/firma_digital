@@ -8,14 +8,14 @@ export default function Profile(){
 
     const { userProfile } = myAppHook();
 
-    console.log(userProfile)
+    console.log("UUUUUUUUU", userProfile)
 
     return <>
 
         <Navbar />
         
 
-        {
+        {   
             userProfile ? ( 
             <div className="container mt-5">
                 <h2>Profile</h2>
@@ -29,7 +29,7 @@ export default function Profile(){
                     <p> { userProfile?.isAdmin && ( <span style={{ color: "red", fontWeight: "bold" }}>Usuario Administrador </span>)} </p>
                 </div>
             </div>             
-            ) : (
+            ) : ( 
                 <p>No se encontró ningún perfil</p>
             )
         }
