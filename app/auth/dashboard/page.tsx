@@ -149,9 +149,9 @@ export default function Dashboard(){
             })
 
             if(error){
-                toast.error("Failed to update product data")
+                toast.error("Error al actualizar la carga!")
             } else{
-                toast.success("Producto has been updated successufully");
+                toast.success("Carga actualizada correctamente!");
             }
         } else{
             //Add Operation
@@ -162,9 +162,9 @@ export default function Dashboard(){
             });
 
             if(error){ 
-                toast.error("Failed to Add product")
+                toast.error("Error al cargar el recibo!")
             } else { 
-                toast.success("Successfully Product has been created!");
+                toast.success("Carga correcta!");
             }
             reset()
 
@@ -220,9 +220,9 @@ export default function Dashboard(){
                 })
 
                 if(error){
-                    toast.error("Failed to delete product")
+                    toast.error("Error al intentar eliminar la carga del recibo!")
                 } else{
-                   toast.success("Product deleted successfully")
+                   toast.success("Carga eliminada correctamente!")
                    fetchProductsFromTable(userId!)
                 }                
             }
