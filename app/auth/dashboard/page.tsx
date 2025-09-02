@@ -338,10 +338,10 @@ export default function Dashboard(){
                 <table className="table table-bordered">
                 <thead>
                     <tr>
-                    <th style={{ width: "10%" }}>Periodo</th>
+                    <th>Períodos</th>
                     <th>Empleador</th>   
                     <th>CUIL</th>  
-                    <th >Empleado</th>  
+                    <th>Apellido&nbsp;y&nbsp;nombre</th>  
                     <th>¿Firmado?</th>
                     <th>Recibo</th>
                     <th className="text-center">Acciones</th>
@@ -356,17 +356,12 @@ export default function Dashboard(){
                                     <td>{ singleProduct.title }</td>
                                     <td>{ singleProduct.content }</td> 
                                     <td>{"No"}</td>                                                                       
-                                    <td className="text-center">
-                                        
-
-                                       
+                                    <td className="text-center">                                       
                                             {singleProduct.banner_image ? (
                                                 <a href={singleProduct.banner_image} target="_blank" rel="noopener noreferrer">
                                                 <img src="/logo_pdf.png" alt="Ver PDF" className="img-fluid" style={{ maxWidth: "30px" }} />
                                                 </a>
                                             ) : ("--")}
-                                            
-                                        
                                     </td>
                                     <td className="d-flex">
                                     <button 
