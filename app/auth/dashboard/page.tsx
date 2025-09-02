@@ -338,13 +338,13 @@ export default function Dashboard(){
                 <table className="table table-bordered">
                 <thead>
                     <tr>
-                    <th style={{ width: "15%" }}>Periodo</th>
+                    <th style={{ width: "10%" }}>Periodo</th>
                     <th>Empleador</th>   
                     <th>CUIL</th>  
-                    <th style={{ width: "35%" }}>Empleado</th>  
+                    <th >Empleado</th>  
                     <th>¿Firmado?</th>
                     <th>Recibo</th>
-                    <th style={{ width: "25%" }}>Acciones</th>
+                    <th className="text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -357,14 +357,7 @@ export default function Dashboard(){
                                     <td>{ singleProduct.content }</td> 
                                     <td>{"No"}</td>                                                                       
                                     <td className="text-center">
-                                       {/* {
-                                            singleProduct.banner_image ? (
-                                                <Image src="/logo_pdf.png"  / * {singleProduct.banner_image} * / 
-                                                alt="Sample Product" 
-                                                width="50" 
-                                                height={ 50 } />
-                                            ) : ("--")
-                                       }  */}
+                                        
 
                                        
                                             {singleProduct.banner_image ? (
@@ -375,12 +368,20 @@ export default function Dashboard(){
                                             
                                         
                                     </td>
-                                    <td>
-                                        <button className="btn btn-primary btn-sm me-2 mb-1 mb-md-0 mb-sm-0" onClick={ () => handleEditData(singleProduct) }>Editar</button>
-                                        <button className="btn btn-danger btn-sm" style={ {
-                                            marginLeft: "0px"
-                                        } } onClick={ () => handleDeleteProduct(singleProduct.id!) }>Borrar</button>
-                                </td>
+                                    <td className="d-flex">
+                                    <button 
+                                        className="btn btn-primary btn-sm me-2" 
+                                        onClick={() => handleEditData(singleProduct)}
+                                    >
+                                        Editar
+                                    </button>
+                                    <button 
+                                        className="btn btn-danger btn-sm" 
+                                        onClick={() => handleDeleteProduct(singleProduct.id!)}
+                                    >
+                                        Borrar
+                                    </button>
+                                    </td>
                             </tr>
                         ) )   : (
                             <tr>
