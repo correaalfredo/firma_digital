@@ -237,7 +237,7 @@ export default function Dashboard(){
         <div className="container mt-5">
             <div className="row">
             
-            <div className="col-md-5">
+            <div className="col-md-4">
                 <h3>{editId ? "Editar recibo de sueldo" : "Cargar recibo de sueldo"}</h3>
                 <form onSubmit={handleSubmit(onFormSubmit)}>
                 
@@ -326,37 +326,37 @@ export default function Dashboard(){
                         />
                     <small className="text-danger">{ errors.banner_image?.message }</small>
                 </div>
-                <button type="submit" className="btn btn-success w-100">
+                <button type="submit" className="btn btn-success w-100 mb-5">
                     { editId  ? "Actualizar carga" : "Cargar"}
                 </button>
                 </form>
             </div>
         
              
-            <div className="col-md-7 mt-5">
+            <div className="col-md-8 mt-1 table-responsive">
                 <h3>Recibos de sueldos enviados</h3>
                 <table className="table table-bordered">
                 <thead>
                     <tr>
-                    <th>Periodo</th>
+                    <th style={{ width: "15%" }}>Periodo</th>
                     <th>Empleador</th>   
                     <th>CUIL</th>  
-                    <th>Empleado</th>  
+                    <th style={{ width: "35%" }}>Empleado</th>  
                     <th>¿Firmado?</th>
-                    <th>Archivo PDF</th>
-                    <th>Acciones</th>
+                    <th>Recibo</th>
+                    <th style={{ width: "25%" }}>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {
-                        products ?  products.map( (singleProduct, index) => (
+                        products ?  products.map( (singleProduct, index) => ( 
                             <tr key={ index }>
                                     <td>{ singleProduct.cost }</td>
                                     <td>{"Empleador"}</td>
                                     <td>{ singleProduct.title }</td>
                                     <td>{ singleProduct.content }</td> 
                                     <td>{"No"}</td>                                                                       
-                                    <td>
+                                    <td className="text-center">
                                        {/* {
                                             singleProduct.banner_image ? (
                                                 <Image src="/logo_pdf.png"  / * {singleProduct.banner_image} * / 
@@ -366,17 +366,17 @@ export default function Dashboard(){
                                             ) : ("--")
                                        }  */}
 
-                                       <td>
+                                       
                                             {singleProduct.banner_image ? (
                                                 <a href={singleProduct.banner_image} target="_blank" rel="noopener noreferrer">
-                                                <img src="/logo_pdf.png" alt="Ver PDF" width="50" height="50" />
+                                                <img src="/logo_pdf.png" alt="Ver PDF" className="img-fluid" style={{ maxWidth: "30px" }} />
                                                 </a>
                                             ) : ("--")}
-                                            </td>
+                                            
                                         
                                     </td>
                                     <td>
-                                        <button className="btn btn-primary btn-sm me-2" onClick={ () => handleEditData(singleProduct) }>Editar</button>
+                                        <button className="btn btn-primary btn-sm me-2 mb-1 mb-md-0 mb-sm-0" onClick={ () => handleEditData(singleProduct) }>Editar</button>
                                         <button className="btn btn-danger btn-sm" style={ {
                                             marginLeft: "0px"
                                         } } onClick={ () => handleDeleteProduct(singleProduct.id!) }>Borrar</button>
