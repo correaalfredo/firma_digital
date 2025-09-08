@@ -12,24 +12,33 @@ import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Swal from "sweetalert2";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { FaFilter, FaTimes, FaFileExcel, FaFilePdf } from "react-icons/fa";
 
-interface ProductType {
+
+interface  PayslipType {
   id: number,
-  title: string,
-  content: string,
-  cost: string,
-  banner_image: string | File | null
+  cuil: string,
+  fullname: string,
+  payroll_period: string,
+  payslip_url_pdf: string | File | null,
+  email_employee: string,
+  cuit: string,
+  company_name: string
 }
 
 
 const formSchema = yup.object().shape({
-  title: yup
+  cuil: yup
     .string()
     .required("Ingrese el CUIL del empleado")
     .matches(/^[0-9]{11}$/, "El CUIL debe contener solo números (11 dígitos)"),  
-  /* content: yup.string().required("Description is required"), */
-  cost: yup.string().required("Ingrese el periodo de liquidación"),
-  banner_image: yup
+  /* fullname: yup.string().required("El nombre y apellido es obligatorio"), */
+  payroll_period: yup.string().required("Ingrese el periodo de liquidación"),
+  payslip_url_pdf: yup
     .mixed()
     .test("required", "El recibo de sueldo es obligatorio", (value) => {
         return value instanceof File || typeof value === "string";
@@ -38,14 +47,19 @@ const formSchema = yup.object().shape({
         if (value instanceof File) return value.type === "application/pdf";
         return true; // Si ya es string (URL), no valida tipo
     }),
+  email_employee: yup.string().required("Ingrese el email del empleado"),  
+  cuit: yup.string().required("Ingrese el CUIT del empleador"),
+  company_name: yup.string().required("Ingrese la denominación del empleador"),    
 });
 
 export default function Dashboard(){
 
     const [previewImage, setPreviewImage] = useState<null>(null)
-    const [products, setProducts] = useState<ProductType | null>(null)
+    const [payslips, setPayslips] = useState<PayslipType | null>(null)
     const [userId, setUserId] = useState<null | string>(null);
     const [editId, setEditId] = useState(null);
+    const [cuilEncontrado, setCuilEncontrado] = useState(false);
+    const [filterPeriod, setFilterPeriod] = useState(""); // formato "YYYY-MM"
 
     const {setAuthToken, setIsLoggedIn, isLoggedIn, setUserProfile, setIsLoading} = myAppHook()
     const router = useRouter();
@@ -94,7 +108,7 @@ export default function Dashboard(){
                     isAdmin: data.session.user?.user_metadata.isAdmin,
                 }))
 
-                fetchProductsFromTable(data.session.user.id)
+                fetchPayslipsFromTable(data.session.user.id)
             }      
              setIsLoading(false)      
         }       
@@ -107,6 +121,10 @@ export default function Dashboard(){
         }
     }, []);
 
+    useEffect(() => {
+        if (userId) fetchPayslipsFromTable(userId);
+    }, [userId]);
+
     // Upload Banner Image
     const uploadImageFile = async(file: File) => {  // banner.jpg
 
@@ -114,6 +132,8 @@ export default function Dashboard(){
     const fileName = `${ Date.now() }.${ fileExtension }`;
 
     const {data, error} = await supabase.storage.from("product-images").upload(fileName, file)
+
+    console.log("ERRORRRR", error)
 
     if(error){
         toast.error("Failed to upload banner image");
@@ -128,11 +148,14 @@ export default function Dashboard(){
 
         setIsLoading(true)
 
-        let imagePath = formData.banner_image;
+        let imagePath = formData.payslip_url_pdf;
+        let pdfName = null;
 
-        if(formData.banner_image instanceof File){
+        if(formData.payslip_url_pdf instanceof File){
 
-            imagePath = await uploadImageFile(formData.banner_image)
+            const file = formData.payslip_url_pdf;
+            imagePath = await uploadImageFile(file)
+            pdfName = file.name; // 👈 guardamos el nombre del archivo
             if(!imagePath) return;
         }
 
@@ -140,9 +163,10 @@ export default function Dashboard(){
            // Edit Operation
             const { 
                 data, error
-            } = await supabase.from("products").update({
+            } = await supabase.from("payslips").update({
                 ...formData,
-                banner_image: imagePath
+                payslip_url_pdf: imagePath,
+                pdf_name: pdfName || formData.pdf_name // si no se subió archivo nuevo, mantiene el anterior
             }).match({
                 id: editId,
                 user_id: userId
@@ -155,13 +179,14 @@ export default function Dashboard(){
             }
         } else{
             //Add Operation
-                const {data, error} = await supabase.from("products").insert({
+                const {data, error} = await supabase.from("payslips").insert({
                 ...formData,
                 user_id: userId,
-                banner_image: imagePath
+                payslip_url_pdf: imagePath,
+                pdf_name: pdfName
             });
 
-            if(error){ 
+            if(error){ console.log("errorrr", error)
                 toast.error("Error al cargar el recibo!")
             } else { 
                 toast.success("Carga correcta!");
@@ -171,38 +196,41 @@ export default function Dashboard(){
         }
 
         setPreviewImage(null)
-        fetchProductsFromTable(userId!)
+        fetchPayslipsFromTable(userId!)
         setIsLoading(false)
     }
 
-    const fetchProductsFromTable = async (userId: string) => {
+    const fetchPayslipsFromTable = async (userId: string) => {
 
         setIsLoading(true)
-        const {data, error} = await supabase.from("products").select("*").eq("user_id", userId)
-        .order("cost", { ascending: false  })     // descendente (último periodo arriba)
-        .order("title", { ascending: true })    // después por CUIL ascendente
-        .order("content", { ascending: true }); // después por nombre ascendente
+        const {data, error} = await supabase.from("payslips").select("*").eq("user_id", userId)
+        .order("payroll_period", { ascending: false  })     // descendente (último periodo arriba)
+        .order("cuil", { ascending: true })    // después por CUIL ascendente
+        .order("fullname", { ascending: true }); // después por nombre ascendente
 
         if(data){
-            setProducts(data)
+            setPayslips(data)
         }
 
         setIsLoading(false)
     }
 
     //Edit Data
-    const handleEditData = (product: ProductType) => {
+    const handleEditData = (payslip: PayslipType) => {
 
-        setValue("title", product.title)
-        setValue("content", product.content)
-        setValue("cost", product.cost)
-        setValue("banner_image", product.banner_image)
-        setPreviewImage(product.banner_image)
-        setEditId(product.id!)
+        setValue("cuil", payslip.cuil)
+        setValue("fullname", payslip.fullname)
+        setValue("payroll_period", payslip.payroll_period)
+        setValue("payslip_url_pdf", payslip.payslip_url_pdf)
+        setPreviewImage(payslip.payslip_url_pdf)
+        setValue("email_employee", payslip.email_employee)
+        setValue("cuit", payslip.cuit)
+        setValue("company_name", payslip.company_name)        
+        setEditId(payslip.id!)
     }
 
-    // Delete Product Operation   
-    const handleDeleteProduct = (id: number) => {
+    // Delete Payslip Operation   
+    const handleDeletePayslip = (id: number) => {
 
         Swal.fire({
             title: "Are you sure?",
@@ -214,7 +242,7 @@ export default function Dashboard(){
             confirmButtonText: "Yes, delete it!"
             }).then(async (result) => {
             if (result.isConfirmed) {
-                const {data, error} = await supabase.from("products").delete().match({
+                const {data, error} = await supabase.from("payslips").delete().match({
                     id: id,
                     user_id: userId
                 })
@@ -223,12 +251,146 @@ export default function Dashboard(){
                     toast.error("Error al intentar eliminar la carga del recibo!")
                 } else{
                    toast.success("Carga eliminada correctamente!")
-                   fetchProductsFromTable(userId!)
+                   fetchPayslipsFromTable(userId!)
                 }                
             }
             });
 
     } 
+
+    const applyPeriodFilter = async () => {
+        if (!userId) return;
+
+        let query = supabase.from("payslips").select("*").eq("user_id", userId);
+
+        if (filterPeriod) {
+            query = query.eq("payroll_period", filterPeriod);
+        }
+
+        // Mantener siempre el orden original
+        const { data, error } = await query
+            .order("payroll_period", { ascending: false }) // último periodo primero
+            .order("cuil", { ascending: true })
+            .order("fullname", { ascending: true });
+
+        if (data) setPayslips(data);
+    };
+
+     const clearFilter = () => {
+        setFilterPeriod(""); // limpiar el input
+        if (userId) fetchPayslipsFromTable(userId); // volver a cargar todos los registros
+    };
+
+    const exportToExcel = async () => {
+        if (!payslips || payslips.length === 0) {
+            toast.error("No hay datos para exportar");
+            return;
+        }
+
+        // Crear workbook y hoja
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("Recibos");
+
+        // Encabezados
+        worksheet.columns = [
+            { header: "Periodo", key: "payroll_period", width: 15 },
+            { header: "Empleador", key: "company_name", width: 25 },
+            { header: "CUIT", key: "cuit", width: 15 },
+            { header: "CUIL", key: "cuil", width: 15 },
+            { header: "Nombre", key: "fullname", width: 25 },
+            { header: "Firmado", key: "signed", width: 10 },
+            { header: "Nombre PDF", key: "pdf_name", width: 20 },
+            { header: "Email", key: "email_employee", width: 25 },
+            { header: "URL PDF", key: "payslip_url_pdf", width: 40 },
+        ];
+
+        // Datos
+        payslips.forEach(p => {
+            worksheet.addRow({
+            payroll_period: p.payroll_period,
+            company_name: p.company_name,
+            cuit: p.cuit,
+            cuil: p.cuil,
+            fullname: p.fullname,
+            signed: p.signed ? "Sí" : "No",
+            pdf_name: p.pdf_name || "N/A",
+            email_employee: p.email_employee || "N/A",
+            payslip_url_pdf: p.payslip_url_pdf || "N/A",
+            });
+        });
+
+        // Estilo encabezados
+        worksheet.getRow(1).eachCell(cell => {
+            cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+            cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FF16A085" }, // verde
+            };
+        });
+
+        // Generar buffer y descargar
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: "application/octet-stream" });
+        saveAs(blob, `reporte_recibos_${filterPeriod || "todos"}.xlsx`);
+    };
+
+    const exportToPDF = () => {
+        if (!payslips || payslips.length === 0) {
+            toast.error("No hay datos para exportar");
+            return;
+        }
+
+        const doc = new jsPDF({
+            orientation: "landscape", // más espacio horizontal
+            unit: "pt",
+            format: "A4",
+        });
+
+        // Encabezado
+        doc.setFontSize(16);
+        doc.text("Reporte de Recibos de Sueldo", 40, 40);
+        doc.setFontSize(10);
+        doc.text(`Generado: ${new Date().toLocaleString()}`, 40, 60);
+
+        // Definir columnas y filas
+        const tableColumn = [
+            "Periodo",
+            "Empleador",
+            "CUIT",
+            "CUIL",
+            "Nombre",
+            "Firmado",
+            "Nombre PDF",
+            "Email",
+        ];
+
+        const tableRows = payslips.map(p => [
+            p.payroll_period,
+            p.company_name,
+            p.cuit,
+            p.cuil,
+            p.fullname,
+            p.signed ? "Sí" : "No",
+            p.pdf_name || "N/A",
+            p.email_employee || "N/A",
+        ]);
+
+        // Generar tabla
+        autoTable(doc, {
+            startY: 80,
+            head: [tableColumn],
+            body: tableRows,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [22, 160, 133], textColor: 255 }, // verde con texto blanco
+            alternateRowStyles: { fillColor: [240, 240, 240] },
+        });
+
+        // Guardar PDF
+        doc.save(`reporte_recibos_${filterPeriod || "todos"}.pdf`);
+    };
+
+
 
     const { userProfile } = myAppHook();
     
@@ -244,60 +406,115 @@ export default function Dashboard(){
                     <>
                         <h3>{editId ? "Editar recibo de sueldo" : "Cargar recibo de sueldo"}</h3>
                         <form onSubmit={handleSubmit(onFormSubmit)}>
-                        <div className="mb-3">
-                            <label className="form-label">CUIL</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                placeholder="Ingrese CUIL"
-                                {...register("title")}
-                                onBlur={async (e) => {
-                                const cuil = e.target.value;                       
-                                if (cuil.length === 11) {
-                                    // Buscar en la tabla de empleados
-                                    const { data, error } = await supabase
-                                    .from("products")
-                                    .select("content")
-                                    .eq("title", cuil)
-                                    .limit(1)
-                                    .single();
+                            
+                            <div className="mb-3">
+                                <label className="form-label">CUIL</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="Ingrese CUIL"
+                                    {...register("cuil")}
+                                    onBlur={async (e) => {
+                                    const cuil = e.target.value;                       
+                                    if (cuil.length === 11) {
+                                        // Buscar en la tabla de empleados
+                                        const { data, error } = await supabase
+                                        .from("payslips")
+                                        .select("fullname, email_employee, cuit, company_name")
+                                        .eq("cuil", cuil)
+                                        .limit(1)
+                                        .single();
 
-                                    if (error) {  
-                                        toast.error("CUIL no encontrado");
-                                        setValue("content", ""); // limpio si no existe
-                                    } else {
-                                        // Concatenar nombre y apellido
-                                        const nombreCompleto = `${data.content}`;
-                                        setValue("content", nombreCompleto);
+                                        if (error) {  
+                                            toast.error("CUIL no encontrado");
+                                            setValue("fullname", ""); // limpio si no existe
+                                            setValue("email_employee", ""); // limpio si no existe
+                                            setValue("cuit", ""); // limpio si no existe
+                                            setValue("company_name", ""); // limpio si no existe
+                                            setCuilEncontrado(false);   // 👉 editable
+                                        } else {
+                                            // Concatenar nombre y apellido
+                                            const nombreCompleto = `${data.fullname}`;
+                                            setValue("fullname", nombreCompleto);
+                                           
+                                            // email del empleado
+                                            const email = `${data.email_employee}`;
+                                            setValue("email_employee", email);
+
+                                            // CUIT del empleador
+                                            const cuit_empleador = `${data.cuit}`;
+                                            setValue("cuit", cuit_empleador);
+
+                                            // Denominación del empleador
+                                            const denominacion_empleador = `${data.company_name}`;
+                                            setValue("company_name", denominacion_empleador);
+
+                                            setCuilEncontrado(true);    // 👉 bloquea edición
+                                        }
                                     }
-                                }
-                                }}
-                            />
-                            <small className="text-danger">{errors.title?.message}</small>
+                                    }}
+                                />
+                                <small className="text-danger">{errors.cuil?.message}</small>
                             </div>
 
                             <div className="mb-3">
-                            <label className="form-label">Nombre y Apellido</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                {...register("content")}
-                                readOnly
-                            />
-                            <small className="text-danger">{errors.content?.message}</small>
+                                <label className="form-label">Nombre y Apellido del Empleado</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    {...register("fullname")}
+                                    readOnly={cuilEncontrado}   // ✅ ahora depende del estado
+                                />
+                                <small className="text-danger">{errors.fullname?.message}</small>
                             </div>
         
+
+                            {/* email_employee */}                            
+                            <div className="mb-3">
+                                <label className="form-label">Correo Electrónico del Empleado</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    {...register("email_employee")}
+                                    readOnly={cuilEncontrado}   // ✅ editable si no lo encontró
+                                />
+                                <small className="text-danger">{errors.email_employee?.message}</small>
+                            </div>
+
+                            {/* cuit */}                            
+                            <div className="mb-3">
+                                <label className="form-label">CUIT del Empleador</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    {...register("cuit")}
+                                    readOnly={cuilEncontrado}   // ✅ editable si no lo encontró
+                                />
+                                <small className="text-danger">{errors.cuit?.message}</small>
+                            </div>
+
+                             {/* company_name */}                            
+                            <div className="mb-3">
+                                <label className="form-label">Denominación del Empleador</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    {...register("company_name")}
+                                    readOnly={cuilEncontrado}   // ✅ editable si no lo encontró
+                                />
+                                <small className="text-danger">{errors.company_name?.message}</small>
+                            </div>
 
 
 
                         <div className="mb-3">
-                        <label className="form-label">Periodo</label>
+                        <label className="form-label">Periodo de liquidación</label>
                         <input
                             type="month"
                             className="form-control"
-                            {...register("cost")}
+                            {...register("payroll_period")}
                         />
-                        <small className="text-danger">{ errors.cost?.message }</small>
+                        <small className="text-danger">{ errors.payroll_period?.message }</small>
                         </div>
                         <div className="mb-3">
                             <label className="form-label">Recibo de sueldo (PDF)</label>
@@ -308,11 +525,11 @@ export default function Dashboard(){
                                     onChange={(e) => {
                                         const file = e.target.files?.[0];
                                         if (file) {
-                                            setValue("banner_image", file, { shouldValidate: true }); // <-- importante
+                                            setValue("payslip_url_pdf", file, { shouldValidate: true }); // <-- importante
                                         }
                                     }}
                                 />
-                            <small className="text-danger">{ errors.banner_image?.message }</small>
+                            <small className="text-danger">{ errors.payslip_url_pdf?.message }</small>
                         </div>
                         <button type="submit" className="btn btn-success w-100 mb-5">
                             { editId  ? "Actualizar carga" : "Cargar"}
@@ -329,7 +546,34 @@ export default function Dashboard(){
             </div>
         
              
-            <div className="col-md-8 mt-1 table-responsive">
+           <div className="col-md-8 mt-1 table-responsive">
+  <div className="d-flex gap-2 align-items-center flex-wrap mb-3">
+    <input 
+      type="month" 
+      className="form-control w-auto" 
+      value={filterPeriod} 
+      onChange={(e) => setFilterPeriod(e.target.value)}/>
+
+        <button className="btn btn-primary d-flex align-items-center gap-2" onClick={applyPeriodFilter}>
+            <FaFilter /> Filtrar
+        </button>
+
+        <button className="btn btn-secondary d-flex align-items-center gap-2" onClick={clearFilter}>
+            <FaTimes /> Quitar filtro
+        </button>
+
+        <button className="btn btn-success d-flex align-items-center gap-2" onClick={exportToExcel}>
+            <FaFileExcel /> Exportar a Excel
+        </button>
+
+        <button className="btn btn-danger d-flex align-items-center gap-2" onClick={exportToPDF}>
+            <FaFilePdf /> Exportar a PDF
+        </button>
+    </div>   
+
+               
+
+
                 {userProfile?.isAdmin ? (
                          <h3>Recibos de sueldos enviados</h3>                     
                     ) : (<h3>Recibos de sueldos</h3>)
@@ -350,28 +594,28 @@ export default function Dashboard(){
                 </thead>
                 <tbody>
                     {
-                        products ?  products.map( (singleProduct, index) => ( 
+                        payslips ?  payslips.map( (singlePayslip, index) => ( 
                             <tr key={ index }>
-                                    <td>{ singleProduct.cost }</td>
-                                    <td>{"Empleador"}</td>
-                                    <td>{ singleProduct.title }</td>
-                                    <td>{ singleProduct.content }</td> 
-                                    <td>{"No"}</td>                                                                       
+                                    <td>{ singlePayslip.payroll_period }</td>
+                                    <td>{ `${ singlePayslip.cuit } - ${ singlePayslip.company_name }` }</td>
+                                    <td>{ singlePayslip.cuil }</td>
+                                    <td>{ singlePayslip.fullname }</td> 
+                                    <td>{ singlePayslip.signed ? "Sí" : "No" }</td>                                                                      
                                     <td className="text-center">                                       
-                                            {singleProduct.banner_image ? (
-                                                <a href={singleProduct.banner_image} target="_blank" rel="noopener noreferrer">
+                                            {singlePayslip.payslip_url_pdf ? (
+                                                <a href={singlePayslip.payslip_url_pdf} target="_blank" rel="noopener noreferrer">
                                                 <img src="/logo_pdf.png" alt="Ver PDF" className="img-fluid" style={{ maxWidth: "30px" }} />
                                                 </a>
                                             ) : ("--")}
                                     </td>
                                     {userProfile?.isAdmin ? (
                                             <td className="d-flex">
-                                                <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singleProduct)}>Editar</button>
-                                                <button className="btn btn-danger btn-sm" onClick={() => handleDeleteProduct(singleProduct.id!)}>Borrar</button>
+                                                <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singlePayslip)}>Editar</button>
+                                                <button className="btn btn-danger btn-sm" onClick={() => handleDeletePayslip(singlePayslip.id!)}>Borrar</button>
                                             </td>
                                             ):( <td className="d-flex">
-                                                <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singleProduct)}>Descargar</button>
-                                                <button className="btn btn-danger btn-sm" onClick={() => handleDeleteProduct(singleProduct.id!)}>Comentar</button>
+                                                <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singlePayslip)}>Descargar</button>
+                                                <button className="btn btn-danger btn-sm" onClick={() => handleDeletePayslip(singlePayslip.id!)}>Comentar</button>
                                             </td>
                                               )
                                     }        
