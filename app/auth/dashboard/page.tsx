@@ -170,7 +170,7 @@ export default function Dashboard(){
                 user_id: userId
             })
 
-            if(error){
+            if(error){ console.log("error--->!!!", error)
                 toast.error("Error al actualizar la carga!")
             } else{
                 toast.success("Carga actualizada correctamente!");
@@ -423,7 +423,7 @@ export default function Dashboard(){
                                         .limit(1)
                                         .single();
 
-                                        if (error) {  
+                                        if (error && !editId) {  
                                             toast.error("CUIL no encontrado");
                                             setValue("fullname", ""); // limpio si no existe
                                             setValue("email_employee", ""); // limpio si no existe
@@ -461,7 +461,7 @@ export default function Dashboard(){
                                     type="text"
                                     className="form-control"
                                     {...register("fullname")}
-                                    readOnly={cuilEncontrado}   // ✅ ahora depende del estado
+                                    readOnly={cuilEncontrado && !editId}   // ✅ ahora depende del estado
                                 />
                                 <small className="text-danger">{errors.fullname?.message}</small>
                             </div>
@@ -474,7 +474,7 @@ export default function Dashboard(){
                                     type="text"
                                     className="form-control"
                                     {...register("email_employee")}
-                                    readOnly={cuilEncontrado}   // ✅ editable si no lo encontró
+                                    readOnly={cuilEncontrado && !editId}   // ✅ editable si no lo encontró
                                 />
                                 <small className="text-danger">{errors.email_employee?.message}</small>
                             </div>
@@ -486,7 +486,7 @@ export default function Dashboard(){
                                     type="text"
                                     className="form-control"
                                     {...register("cuit")}
-                                    readOnly={cuilEncontrado}   // ✅ editable si no lo encontró
+                                    readOnly={cuilEncontrado && !editId}   // ✅ editable si no lo encontró
                                 />
                                 <small className="text-danger">{errors.cuit?.message}</small>
                             </div>
@@ -498,7 +498,7 @@ export default function Dashboard(){
                                     type="text"
                                     className="form-control"
                                     {...register("company_name")}
-                                    readOnly={cuilEncontrado}   // ✅ editable si no lo encontró
+                                    readOnly={cuilEncontrado && !editId}   // ✅ editable si no lo encontró
                                 />
                                 <small className="text-danger">{errors.company_name?.message}</small>
                             </div>
