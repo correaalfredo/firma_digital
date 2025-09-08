@@ -121,9 +121,9 @@ export default function Dashboard(){
         }
     }, []);
 
-    useEffect(() => {
+/*     useEffect(() => {
         if (userId) fetchPayslipsFromTable(userId);
-    }, [userId]);
+    }, [userId]); */
 
     // Upload Banner Image
     const uploadImageFile = async(file: File) => {  // banner.jpg
@@ -132,8 +132,6 @@ export default function Dashboard(){
     const fileName = `${ Date.now() }.${ fileExtension }`;
 
     const {data, error} = await supabase.storage.from("product-images").upload(fileName, file)
-
-    console.log("ERRORRRR", error)
 
     if(error){
         toast.error("Failed to upload banner image");
@@ -186,7 +184,7 @@ export default function Dashboard(){
                 pdf_name: pdfName
             });
 
-            if(error){ console.log("errorrr", error)
+            if(error){ 
                 toast.error("Error al cargar el recibo!")
             } else { 
                 toast.success("Carga correcta!");
