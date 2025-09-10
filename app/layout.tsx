@@ -24,7 +24,7 @@ export default function RootLayout({
           <Toaster />          
 
           {/* Contenido principal (crece para empujar el footer abajo) */}
-          <main className="flex-grow-1 container">
+          <main className="flex-grow-1 container-fluid">
             {children}
           </main>
 

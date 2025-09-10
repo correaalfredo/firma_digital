@@ -17,7 +17,9 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFilter, FaTimes, FaFileExcel, FaFilePdf } from "react-icons/fa";
-
+ 
+ 
+ 
 
 interface  PayslipType {
   id: number,
@@ -27,7 +29,9 @@ interface  PayslipType {
   payslip_url_pdf: string | File | null,
   email_employee: string,
   cuit: string,
-  company_name: string
+  company_name: string,
+  pdf_name?:string,
+  signed?: boolean,
 }
 
 
@@ -57,9 +61,12 @@ export default function Dashboard(){
     const [previewImage, setPreviewImage] = useState<null>(null)
     const [payslips, setPayslips] = useState<PayslipType | null>(null)
     const [userId, setUserId] = useState<null | string>(null);
+    const [isUserAdmin, setIsUserAdmin] = useState<null  | boolean  >(null);
+    const [userEmail, setUserEmail] = useState<null | string>(null);
     const [editId, setEditId] = useState(null);
     const [cuilEncontrado, setCuilEncontrado] = useState(false);
     const [filterPeriod, setFilterPeriod] = useState(""); // formato "YYYY-MM"
+    
 
     const {setAuthToken, setIsLoggedIn, isLoggedIn, setUserProfile, setIsLoading} = myAppHook()
     const router = useRouter();
@@ -83,9 +90,13 @@ export default function Dashboard(){
 
             setIsLoading(true)
             if(data.session?.access_token){
-                console.log(data);
+               
                 setAuthToken(data.session?.access_token);    
                 setUserId(data.session?.user.id);
+                setIsUserAdmin(data.session?.user?.user_metadata.isAdmin);
+                setUserEmail(data.session?.user?.user_metadata.email);
+
+               
                 localStorage.setItem("access_token", data.session?.access_token);
                 setIsLoggedIn(true);
                 setUserProfile({
@@ -97,6 +108,8 @@ export default function Dashboard(){
                     phone: data.session.user?.user_metadata.phone,
                     isAdmin: data.session.user?.user_metadata.isAdmin,
                 });
+
+                 
                 //toast.success("User logged in successfully");
                 localStorage.setItem("user_profile", JSON.stringify ({
                     name: data.session.user?.user_metadata.name,
@@ -108,7 +121,7 @@ export default function Dashboard(){
                     isAdmin: data.session.user?.user_metadata.isAdmin,
                 }))
 
-                fetchPayslipsFromTable(data.session.user.id)
+                fetchPayslipsFromTable(data.session.user.id, data.session?.user?.user_metadata.isAdmin, data.session?.user?.user_metadata.email)
             }      
              setIsLoading(false)      
         }       
@@ -121,9 +134,7 @@ export default function Dashboard(){
         }
     }, []);
 
-/*     useEffect(() => {
-        if (userId) fetchPayslipsFromTable(userId);
-    }, [userId]); */
+    
 
     // Upload Banner Image
     const uploadImageFile = async(file: File) => {  // banner.jpg
@@ -170,7 +181,7 @@ export default function Dashboard(){
                 user_id: userId
             })
 
-            if(error){ console.log("error--->!!!", error)
+            if(error){ 
                 toast.error("Error al actualizar la carga!")
             } else{
                 toast.success("Carga actualizada correctamente!");
@@ -194,18 +205,39 @@ export default function Dashboard(){
         }
 
         setPreviewImage(null)
-        fetchPayslipsFromTable(userId!)
+        fetchPayslipsFromTable(userId!, isUserAdmin!, userEmail!)
         setIsLoading(false)
     }
 
-    const fetchPayslipsFromTable = async (userId: string) => {
+    const fetchPayslipsFromTable = async (userId: string, isUserAdmin: boolean, userEmail: string) => {
 
         setIsLoading(true)
-        const {data, error} = await supabase.from("payslips").select("*").eq("user_id", userId)
-        .order("payroll_period", { ascending: false  })     // descendente (último periodo arriba)
-        .order("cuil", { ascending: true })    // después por CUIL ascendente
-        .order("fullname", { ascending: true }); // después por nombre ascendente
+             
+        let data, error;
 
+        console.log("->>>", userId, isUserAdmin, userEmail )
+        
+        if (isUserAdmin) {  
+        ({ data, error } = await supabase
+            .from("payslips")
+            .select("*")
+            .eq("user_id", userId)
+            .order("payroll_period", { ascending: false })
+            .order("cuil", { ascending: true })
+            .order("fullname", { ascending: true }));
+            //console.log(data)
+        } else {
+        (            
+            { data, error } = await supabase
+            .from("payslips")
+            .select("*")
+            .eq("email_employee", userEmail)
+            .order("payroll_period", { ascending: false })
+            .order("cuil", { ascending: true })
+            .order("fullname", { ascending: true }));
+            //console.log(data)
+        }  
+        
         if(data){
             setPayslips(data)
         }
@@ -249,7 +281,7 @@ export default function Dashboard(){
                     toast.error("Error al intentar eliminar la carga del recibo!")
                 } else{
                    toast.success("Carga eliminada correctamente!")
-                   fetchPayslipsFromTable(userId!)
+                   fetchPayslipsFromTable(userId!, isUserAdmin!, userEmail!)
                 }                
             }
             });
@@ -259,7 +291,17 @@ export default function Dashboard(){
     const applyPeriodFilter = async () => {
         if (!userId) return;
 
-        let query = supabase.from("payslips").select("*").eq("user_id", userId);
+        let query 
+        if (isUserAdmin){
+            (query = supabase.from("payslips").select("*").eq("user_id", userId)
+                    .order("payroll_period", { ascending: false })
+                    .order("cuil", { ascending: true })
+                    .order("fullname", { ascending: true }));}
+        else{
+            (query = supabase.from("payslips").select("*").eq("email_employee", userEmail)
+                    .order("payroll_period", { ascending: false })
+                    .order("cuil", { ascending: true })
+                    .order("fullname", { ascending: true }));}
 
         if (filterPeriod) {
             query = query.eq("payroll_period", filterPeriod);
@@ -272,11 +314,16 @@ export default function Dashboard(){
             .order("fullname", { ascending: true });
 
         if (data) setPayslips(data);
+        if (!data || data.length === 0) {
+            toast("Sin registros para el período", { icon: "ℹ️" });
+            setPayslips(null);
+            return;
+        }
     };
 
      const clearFilter = () => {
         setFilterPeriod(""); // limpiar el input
-        if (userId) fetchPayslipsFromTable(userId); // volver a cargar todos los registros
+        if (userId) fetchPayslipsFromTable(userId!, isUserAdmin!, userEmail!); // volver a cargar todos los registros
     };
 
     const exportToExcel = async () => {
@@ -389,6 +436,53 @@ export default function Dashboard(){
     };
 
 
+    const handleSignedPayslip = async (payslipId: number) => {
+        if (!payslips) return;
+
+        // Buscar el recibo correspondiente
+        const selected = payslips.find(p => p.id === payslipId);
+        if (!selected || !selected.payslip_url_pdf) return;
+
+        // 1️⃣ Actualizar la columna "signed" en Supabase
+        const { data, error } = await supabase
+            .from("payslips")
+            .update({ signed: true })
+            .eq("id", payslipId);
+
+        if (error) {
+            toast.error("Error al firmar el recibo.");
+            return;
+        }
+
+        // 2️⃣ Actualizar el estado local para reflejar el cambio inmediatamente
+        setPayslips(prev => prev?.map(p => 
+            p.id === payslipId ? { ...p, signed: true } : p
+        ) || null);
+
+        toast.success("Recibo firmado correctamente.");
+
+         // 3️⃣ Descargar PDF correctamente usando fetch
+        try {
+            const response = await fetch(selected.payslip_url_pdf as string);
+            if (!response.ok) throw new Error("Error al descargar el PDF");
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = selected.pdf_name || `recibo_${selected.payroll_period}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            toast.error("No se pudo descargar el PDF.");
+        }
+    };
+
+    
+
 
     const { userProfile } = myAppHook();
     
@@ -399,7 +493,7 @@ export default function Dashboard(){
         <div className="container mt-5">
             <div className="row">
             
-            <div className="col-md-4">
+            <div className="col-md-3">
                 {userProfile?.isAdmin ? (
                     <>
                         <h3>{editId ? "Editar recibo de sueldo" : "Cargar recibo de sueldo"}</h3>
@@ -544,32 +638,31 @@ export default function Dashboard(){
             </div>
         
              
-           <div className="col-md-8 mt-1 table-responsive">
-  <div className="d-flex gap-2 align-items-center flex-wrap mb-3">
-    <input 
-      type="month" 
-      className="form-control w-auto" 
-      value={filterPeriod} 
-      onChange={(e) => setFilterPeriod(e.target.value)}/>
+           <div className="col-md-9 mt-1 table-responsive">
+                <div className="d-flex gap-2 align-items-center flex-wrap mb-3">
+                    
+                    <input 
+                    type="month" 
+                    className="form-control w-auto" 
+                    value={filterPeriod} 
+                    onChange={(e) => setFilterPeriod(e.target.value)}/>
 
-        <button className="btn btn-primary d-flex align-items-center gap-2" onClick={applyPeriodFilter}>
-            <FaFilter /> Filtrar
-        </button>
+                    <button className="btn btn-primary d-flex align-items-center gap-2" onClick={applyPeriodFilter}>
+                        <FaFilter /> Filtrar
+                    </button>
 
-        <button className="btn btn-secondary d-flex align-items-center gap-2" onClick={clearFilter}>
-            <FaTimes /> Quitar filtro
-        </button>
+                    <button className="btn btn-secondary d-flex align-items-center gap-2" onClick={clearFilter}>
+                        <FaTimes /> Quitar filtro
+                    </button>
 
-        <button className="btn btn-success d-flex align-items-center gap-2" onClick={exportToExcel}>
-            <FaFileExcel /> Exportar a Excel
-        </button>
+                    <button className="btn btn-success d-flex align-items-center gap-2" onClick={exportToExcel}>
+                        <FaFileExcel /> Exportar a Excel
+                    </button>
 
-        <button className="btn btn-danger d-flex align-items-center gap-2" onClick={exportToPDF}>
-            <FaFilePdf /> Exportar a PDF
-        </button>
-    </div>   
-
-               
+                    <button className="btn btn-danger d-flex align-items-center gap-2" onClick={exportToPDF}>
+                        <FaFilePdf /> Exportar a PDF
+                    </button>
+                </div>                  
 
 
                 {userProfile?.isAdmin ? (
@@ -578,7 +671,7 @@ export default function Dashboard(){
                 }
 
                 
-                <table className="table table-bordered">
+                <table className="table table-bordered mb-5">
                 <thead>
                     <tr>
                     <th>Períodos</th>
@@ -602,7 +695,7 @@ export default function Dashboard(){
                                     <td className="text-center">                                       
                                             {singlePayslip.payslip_url_pdf ? (
                                                 <a href={singlePayslip.payslip_url_pdf} target="_blank" rel="noopener noreferrer">
-                                                <img src="/logo_pdf.png" alt="Ver PDF" className="img-fluid" style={{ maxWidth: "30px" }} />
+                                                    <img src="/logo_pdf.png" alt="Ver PDF" className="img-fluid" style={{ maxWidth: "30px" }} />
                                                 </a>
                                             ) : ("--")}
                                     </td>
@@ -612,9 +705,9 @@ export default function Dashboard(){
                                                 <button className="btn btn-danger btn-sm" onClick={() => handleDeletePayslip(singlePayslip.id!)}>Borrar</button>
                                             </td>
                                             ):( <td className="d-flex">
-                                                <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singlePayslip)}>Descargar</button>
-                                                <button className="btn btn-danger btn-sm" onClick={() => handleDeletePayslip(singlePayslip.id!)}>Comentar</button>
-                                            </td>
+                                                    {/* <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singlePayslip)}>Ver</button> */}
+                                                    <button className="btn btn-danger btn-sm" onClick={() => handleSignedPayslip(singlePayslip.id!)}>Firmar y Descargar</button>
+                                                </td>
                                               )
                                     }        
                             </tr>

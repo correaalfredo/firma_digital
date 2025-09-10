@@ -69,7 +69,7 @@ export default function Login(){
             setIsLoading(false) 
         } else {
             if(data.session?.access_token){
-                //console.log(data);
+                
                 setAuthToken(data.session?.access_token);    
                 localStorage.setItem("access_token", data.session?.access_token);
                 setIsLoggedIn(true);
