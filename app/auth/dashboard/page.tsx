@@ -17,7 +17,7 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFilter, FaTimes, FaFileExcel, FaFilePdf } from "react-icons/fa";
- 
+import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
  
  
 
@@ -482,6 +482,58 @@ export default function Dashboard(){
     };
 
     
+    const openPdfWithWatermark = async (pdfUrl: string) => {
+        try {
+            // 1️⃣ Descargar el PDF original
+            const existingPdfBytes = await fetch(pdfUrl).then(res => res.arrayBuffer());
+
+            // 2️⃣ Cargar PDF con pdf-lib
+            const pdfDoc = await PDFDocument.load(existingPdfBytes);
+
+            // 3️⃣ Obtener páginas
+            const pages = pdfDoc.getPages();
+
+            // 4️⃣ Preparar fuente
+            const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+            // 5️⃣ Agregar **dos marcas de agua** por página
+            pages.forEach(page => {
+                const { width, height } = page.getSize();
+
+                // Primera marca de agua
+                page.drawText("Documento no válido", {
+                    x: width / 2 - 100,
+                    y: height / 2,
+                    size: 50,
+                    font: font,
+                    color: rgb(1, 0, 0),
+                    rotate: degrees(45),
+                    opacity: 0.3,
+                });
+
+                // Segunda marca de agua, desplazada un poco
+                page.drawText("Documento no válido", {
+                    x: width / 2 - 200,
+                    y: height / 2 - 200,
+                    size: 50,
+                    font: font,
+                    color: rgb(1, 0, 0),
+                    rotate: degrees(45),
+                    opacity: 0.3,
+                });
+            });
+
+            // 6️⃣ Guardar PDF modificado y abrirlo
+            const pdfBytes = await pdfDoc.save();
+            const blob = new Blob([pdfBytes], { type: "application/pdf" });
+            const url = window.URL.createObjectURL(blob);
+            window.open(url, "_blank");
+
+        } catch (error) {
+            console.error("Error al abrir PDF con marcas de agua:", error);
+        }
+    };
+
 
 
     const { userProfile } = myAppHook();
@@ -692,13 +744,27 @@ export default function Dashboard(){
                                     <td>{ singlePayslip.cuil }</td>
                                     <td>{ singlePayslip.fullname }</td> 
                                     <td>{ singlePayslip.signed ? "Sí" : "No" }</td>                                                                      
-                                    <td className="text-center">                                       
+                                   {/*  <td className="text-center">                                       
                                             {singlePayslip.payslip_url_pdf ? (
                                                 <a href={singlePayslip.payslip_url_pdf} target="_blank" rel="noopener noreferrer">
                                                     <img src="/logo_pdf.png" alt="Ver PDF" className="img-fluid" style={{ maxWidth: "30px" }} />
                                                 </a>
                                             ) : ("--")}
+                                    </td> */}
+
+                                    <td className="text-center">
+                                    {singlePayslip.payslip_url_pdf ? (
+                                        <button
+                                        className="btn btn-sm btn-info"
+                                        onClick={() => openPdfWithWatermark (singlePayslip.payslip_url_pdf as string)}
+                                        >
+                                        Ver PDF
+                                        </button>
+                                    ) : (
+                                        "--"
+                                    )}
                                     </td>
+
                                     {userProfile?.isAdmin ? (
                                             <td className="d-flex">
                                                 <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singlePayslip)}>Editar</button>
