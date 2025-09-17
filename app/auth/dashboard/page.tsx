@@ -52,7 +52,10 @@ const formSchema = yup.object().shape({
         return true; // Si ya es string (URL), no valida tipo
     }),
   email_employee: yup.string().required("Ingrese el email del empleado"),  
-  cuit: yup.string().required("Ingrese el CUIT del empleador"),
+  cuit: yup
+    .string()
+    .required("Ingrese el CUIL del empleado")
+    .matches(/^[0-9]{11}$/, "El CUIL debe contener solo números (11 dígitos)"),
   company_name: yup.string().required("Ingrese la denominación del empleador"),    
 });
 
@@ -181,13 +184,13 @@ export default function Dashboard(){
                 user_id: userId
             })
 
-            if(error){ 
+            if(error){ console.log("Actualizar", error)
                 toast.error("Error al actualizar la carga!")
             } else{
                 toast.success("Carga actualizada correctamente!");
             }
         } else{
-            //Add Operation
+                //Add Operation
                 const {data, error} = await supabase.from("payslips").insert({
                 ...formData,
                 user_id: userId,
@@ -195,8 +198,8 @@ export default function Dashboard(){
                 pdf_name: pdfName
             });
 
-            if(error){ 
-                toast.error("Error al cargar el recibo!")
+            if(error){  console.log("ERROR CARAGR", error)
+                toast.error("Error al cargar el recibo!. El email ya está asociado a otros datos!")
             } else { 
                 toast.success("Carga correcta!");
             }
@@ -335,18 +338,26 @@ export default function Dashboard(){
         // Crear workbook y hoja
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Recibos");
+        const borderStyle = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+            };
+
 
         // Encabezados
         worksheet.columns = [
             { header: "Periodo", key: "payroll_period", width: 15 },
             { header: "Empleador", key: "company_name", width: 25 },
-            { header: "CUIT", key: "cuit", width: 15 },
-            { header: "CUIL", key: "cuil", width: 15 },
-            { header: "Nombre", key: "fullname", width: 25 },
-            { header: "Firmado", key: "signed", width: 10 },
-            { header: "Nombre PDF", key: "pdf_name", width: 20 },
-            { header: "Email", key: "email_employee", width: 25 },
-            { header: "URL PDF", key: "payslip_url_pdf", width: 40 },
+            { header: "CUIT del Empleador", key: "cuit", width: 20 },
+            { header: "Email del Empleado", key: "email_employee", width: 35 },
+            { header: "CUIL del Empleado", key: "cuil", width: 20 },
+            { header: "Nombre y Apellido del Empleado", key: "fullname", width: 35 },            
+            { header: "Nombre del Archivo PDF", key: "pdf_name", width: 65 },
+            { header: "¿Firmado?", key: "signed", width: 10 },  
+            { header: "Check ✅", key: "check", width: 10 },        
+            /* { header: "URL PDF", key: "payslip_url_pdf", width: 40 }, */
         ];
 
         // Datos
@@ -361,6 +372,7 @@ export default function Dashboard(){
             pdf_name: p.pdf_name || "N/A",
             email_employee: p.email_employee || "N/A",
             payslip_url_pdf: p.payslip_url_pdf || "N/A",
+            check: "",
             });
         });
 
@@ -372,7 +384,16 @@ export default function Dashboard(){
             pattern: "solid",
             fgColor: { argb: "FF16A085" }, // verde
             };
+            cell.border = borderStyle; // 👈 Bordes en encabezados
         });
+
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber > 1) { // evitar repetir sobre encabezado
+                row.eachCell(cell => {
+                cell.border = borderStyle; // 👈 Bordes en cada celda
+                });
+            }
+            });
 
         // Generar buffer y descargar
         const buffer = await workbook.xlsx.writeBuffer();
@@ -402,23 +423,24 @@ export default function Dashboard(){
         const tableColumn = [
             "Periodo",
             "Empleador",
-            "CUIT",
-            "CUIL",
-            "Nombre",
-            "Firmado",
-            "Nombre PDF",
-            "Email",
+            "CUIT del Empleador",
+            "Email del Empleado",
+            "CUIL del Empleado",
+            "Nombre y Apellido del Empleado",
+            "Nombre del Archivo PDF",
+            "Firmado",   
+            "Check"  
         ];
 
         const tableRows = payslips.map(p => [
             p.payroll_period,
             p.company_name,
             p.cuit,
+            p.email_employee || "N/A",
             p.cuil,
             p.fullname,
-            p.signed ? "Sí" : "No",
-            p.pdf_name || "N/A",
-            p.email_employee || "N/A",
+            p.pdf_name || "N/A",    
+            p.signed ? "Sí" : "No",                    
         ]);
 
         // Generar tabla
@@ -426,10 +448,22 @@ export default function Dashboard(){
             startY: 80,
             head: [tableColumn],
             body: tableRows,
-            styles: { fontSize: 8 },
-            headStyles: { fillColor: [22, 160, 133], textColor: 255 }, // verde con texto blanco
-            alternateRowStyles: { fillColor: [240, 240, 240] },
-        });
+            styles: { 
+                fontSize: 8,
+                lineWidth: 0.2,              // grosor del borde
+                lineColor: [0, 0, 0],        // color negro
+            },
+            headStyles: { 
+                fillColor: [22, 160, 133],   // verde
+                textColor: 255,
+                lineWidth: 0.5,              // borde más grueso para encabezado
+                lineColor: [0, 0, 0],
+            },
+            alternateRowStyles: { 
+                fillColor: [240, 240, 240]   // gris alternado
+            },
+            });
+
 
         // Guardar PDF
         doc.save(`reporte_recibos_${filterPeriod || "todos"}.pdf`);
@@ -502,8 +536,8 @@ export default function Dashboard(){
 
                 // Primera marca de agua
                 page.drawText("Documento no válido", {
-                    x: width / 2 - 100,
-                    y: height / 2,
+                    x: width / 2 - 210,
+                    y: height / 2 - 60 ,
                     size: 50,
                     font: font,
                     color: rgb(1, 0, 0),
@@ -515,6 +549,49 @@ export default function Dashboard(){
                 page.drawText("Documento no válido", {
                     x: width / 2 - 200,
                     y: height / 2 - 200,
+                    size: 50,
+                    font: font,
+                    color: rgb(1, 0, 0),
+                    rotate: degrees(45),
+                    opacity: 0.3,
+                });
+
+                // Tercera marca de agua, desplazada un poco
+                page.drawText("Documento no válido", {
+                    x: width / 2 - 50,
+                    y: height / 2 - 200,
+                    size: 50,
+                    font: font,
+                    color: rgb(1, 0, 0),
+                    rotate: degrees(45),
+                    opacity: 0.3,
+                });
+                // Cuarta marca de agua, desplazada un poco
+                page.drawText("Documento no válido", {
+                    x: width / 2 - 80,
+                    y: height / 2 - 380,
+                    size: 50,
+                    font: font,
+                    color: rgb(1, 0, 0),
+                    rotate: degrees(45),
+                    opacity: 0.3,
+                });
+
+                // Quinta marca de agua, desplazada un poco
+                page.drawText("Documento no válido", {
+                    x: width / 2 ,
+                    y: height / 2 - 450,
+                    size: 50,
+                    font: font,
+                    color: rgb(1, 0, 0),
+                    rotate: degrees(45),
+                    opacity: 0.3,
+                });
+
+                 // Sexta marca de agua
+                page.drawText("Documento no válido", {
+                    x: width / 4 - 200,
+                    y: height / 2 - 110,
                     size: 50,
                     font: font,
                     color: rgb(1, 0, 0),
@@ -571,10 +648,10 @@ export default function Dashboard(){
 
                                         if (error && !editId) {  
                                             toast.error("CUIL no encontrado");
-                                            setValue("fullname", ""); // limpio si no existe
+                                            /* setValue("fullname", ""); // limpio si no existe
                                             setValue("email_employee", ""); // limpio si no existe
                                             setValue("cuit", ""); // limpio si no existe
-                                            setValue("company_name", ""); // limpio si no existe
+                                            setValue("company_name", ""); // limpio si no existe */
                                             setCuilEncontrado(false);   // 👉 editable
                                         } else {
                                             // Concatenar nombre y apellido
@@ -610,8 +687,7 @@ export default function Dashboard(){
                                     readOnly={cuilEncontrado && !editId}   // ✅ ahora depende del estado
                                 />
                                 <small className="text-danger">{errors.fullname?.message}</small>
-                            </div>
-        
+                            </div>        
 
                             {/* email_employee */}                            
                             <div className="mb-3">
@@ -682,7 +758,7 @@ export default function Dashboard(){
                     </>
                     ) : (
                         <div className="mb-3">
-                             <h5> Nombre: {userProfile?.name} { userProfile?.lastName }</h5> 
+                             <h5> Nombre y Apellido: {userProfile?.name} { userProfile?.lastName }</h5> 
                              <h5> CUIL: {userProfile?.cuil}</h5> 
                         </div>
                     )
@@ -743,26 +819,39 @@ export default function Dashboard(){
                                     <td>{ `${ singlePayslip.cuit } - ${ singlePayslip.company_name }` }</td>
                                     <td>{ singlePayslip.cuil }</td>
                                     <td>{ singlePayslip.fullname }</td> 
-                                    <td>{ singlePayslip.signed ? "Sí" : "No" }</td>                                                                      
-                                   {/*  <td className="text-center">                                       
-                                            {singlePayslip.payslip_url_pdf ? (
-                                                <a href={singlePayslip.payslip_url_pdf} target="_blank" rel="noopener noreferrer">
-                                                    <img src="/logo_pdf.png" alt="Ver PDF" className="img-fluid" style={{ maxWidth: "30px" }} />
-                                                </a>
-                                            ) : ("--")}
-                                    </td> */}
+                                    <td>{ singlePayslip.signed ? "Sí" : "No" }</td>  
 
-                                    <td className="text-center">
-                                    {singlePayslip.payslip_url_pdf ? (
-                                        <button
-                                        className="btn btn-sm btn-info"
-                                        onClick={() => openPdfWithWatermark (singlePayslip.payslip_url_pdf as string)}
-                                        >
-                                        Ver PDF
-                                        </button>
-                                    ) : (
-                                        "--"
-                                    )}
+
+                                     <td className="text-center">                                       
+                                        {singlePayslip.payslip_url_pdf ? (
+                                            userProfile?.isAdmin ? (
+                                                // 🔹 Si es Admin → muestra el link directo al PDF
+                                                <a
+                                                href={singlePayslip.payslip_url_pdf}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                >
+                                                <img
+                                                    src="/logo_pdf.png"
+                                                    alt="Ver PDF"
+                                                    className="img-fluid"
+                                                    style={{ maxWidth: "30px" }}
+                                                />
+                                                </a>
+                                            ) : (
+                                                // 🔹 Si NO es Admin → botón que abre el PDF con marca de agua
+                                                <button
+                                                className="btn btn-sm btn-info"
+                                                onClick={() =>
+                                                    openPdfWithWatermark(singlePayslip.payslip_url_pdf as string)
+                                                }
+                                                >
+                                                Ver PDF
+                                                </button>
+                                            )
+                                            ) : (
+                                            "--"
+                                            )}
                                     </td>
 
                                     {userProfile?.isAdmin ? (
