@@ -11,8 +11,8 @@ import { useRouter } from "next/navigation";
 import { myAppHook } from "@/context/AppUtils";
 
 const formSchema = yup.object().shape({
-    //name: yup.string().required("El nombre es obligatorio"),
-    //lastName: yup.string().required("El apellido es obligatorio"),
+     name: yup.string().required("El nombre es obligatorio"),
+     lastName: yup.string().required("El apellido es obligatorio"),
     //cuil: yup.string().required("El CUIL es obligatorio"),
     //empleador: yup.string().required("El nombre de su empleador es obligatorio"),
     email: yup.string().email("Dirección de Email no válida").required("El Email es obligatorio"),
@@ -76,7 +76,7 @@ export default function Register(){
         <div className="container mt-5">
             <h2 className="text-center">Registro de usuario</h2>
             <form onSubmit={ handleSubmit(onSubmit) } className="w-50 mx-auto mt-3">
-                {/* <div className="row mb-3">
+                <div className="row mb-3">
                     <div className="col-md-6">
                         <label className="form-label">Nombre</label>
                         <input type="text" className="form-control" { ...register("name") } />
@@ -88,7 +88,7 @@ export default function Register(){
                         <p className="text-danger">{ errors.lastName?.message }</p>
                     </div>
                     
-                </div> */}
+                </div>
 
                 <div className="row mb-3">
 

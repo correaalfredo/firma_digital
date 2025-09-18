@@ -19,8 +19,8 @@ export default function Profile(){
                 <h2>Profile</h2>
                 <div className="card p-4 shadow-sm">
                     <p><strong>Nombre y Apellido:</strong> {userProfile?.name} { userProfile?.lastName }</p>                     
-                    <p><strong>CUIL:</strong> { userProfile?.cuil } </p>
-                    <p><strong>Empleador:</strong> { userProfile?.empleador } </p>
+                   {/*  <p><strong>CUIL:</strong> { userProfile?.cuil } </p>
+                    <p><strong>Empleador:</strong> { userProfile?.empleador } </p> */}
                     <p><strong>Email:</strong> { userProfile?.email } </p>
                     <p><strong>Teléfono:</strong> { userProfile?.phone } </p>                    
                     <p> { userProfile?.isAdmin && ( <span style={{ color: "red", fontWeight: "bold" }}>Usuario Administrador </span>)} </p>

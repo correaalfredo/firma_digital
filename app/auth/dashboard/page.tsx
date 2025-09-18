@@ -59,6 +59,7 @@ const formSchema = yup.object().shape({
   company_name: yup.string().required("Ingrese la denominación del empleador"),    
 });
 
+
 export default function Dashboard(){
 
     const [previewImage, setPreviewImage] = useState<null>(null)
@@ -69,6 +70,7 @@ export default function Dashboard(){
     const [editId, setEditId] = useState(null);
     const [cuilEncontrado, setCuilEncontrado] = useState(false);
     const [filterPeriod, setFilterPeriod] = useState(""); // formato "YYYY-MM"
+    const [filterCuil, setFilterCuil] = useState("");
     
 
     const {setAuthToken, setIsLoggedIn, isLoggedIn, setUserProfile, setIsLoading} = myAppHook()
@@ -266,7 +268,7 @@ export default function Dashboard(){
     const handleDeletePayslip = (id: number) => {
 
         Swal.fire({
-            title: "Are you sure?",
+            title: "Are you sure?", //Hacer similar para el update!!! Es fundamenteal!!! Cambiar lo que está en ingles!
             text: "You won't be able to revert this!",
             icon: "warning",
             showCancelButton: true,
@@ -612,6 +614,81 @@ export default function Dashboard(){
     };
 
 
+    const applyCuilFilter = async () => {
+        if (!userId) return;
+
+        // 🔹 Validar CUIL antes de la consulta
+        const filterCuilSchema = yup.object().shape({
+            cuil: yup
+                .string()
+                .notRequired() // permite estar vacío
+                .matches(/^[0-9]{11}$/, "El CUIL debe contener solo números (11 dígitos)")
+        });
+
+        try {
+            await filterCuilSchema.validate({ cuil: filterCuil });
+        } catch (err) {
+            if (err instanceof yup.ValidationError) {
+                toast.error(err.message);
+                return; // detener ejecución si no pasa validación
+            }
+        }
+
+        // 🔹 Limpiar el campo de periodo al aplicar filtro por CUIL
+        setFilterPeriod("");
+
+        // 🔹 Consulta Supabase
+        let query;
+        if (isUserAdmin) {
+            query = supabase
+                .from("payslips")
+                .select("*")
+                .eq("user_id", userId)
+                .order("payroll_period", { ascending: false })
+                .order("cuil", { ascending: true })
+                .order("fullname", { ascending: true });
+        } else {
+            query = supabase
+                .from("payslips")
+                .select("*")
+                .eq("email_employee", userEmail)
+                .order("payroll_period", { ascending: false })
+                .order("cuil", { ascending: true })
+                .order("fullname", { ascending: true });
+        }
+
+        if (filterCuil) {
+            query = query.eq("cuil", filterCuil);
+        }
+
+        const { data, error } = await query;
+        if (data) setPayslips(data);
+
+        if (!data || data.length === 0) {
+            toast("Sin registros para el CUIL", { icon: "ℹ️" });
+            setPayslips(null);
+            return;
+        }
+    };
+
+
+    const clearCuilFilter = () => {
+        setFilterCuil("");
+        if (userId) fetchPayslipsFromTable(userId!, isUserAdmin!, userEmail!);
+    };
+
+    const handlePeriodChange = (e) => {
+        setFilterPeriod(e.target.value);
+        setFilterCuil(""); // Limpiar el CUIL cuando se filtra por periodo
+    };
+
+
+    const handleCuilChange = (e) => {
+        setFilterCuil(e.target.value);
+        setFilterPeriod(""); // Limpiar el periodo cuando se filtra por CUIL
+    };
+
+
 
     const { userProfile } = myAppHook();
     
@@ -633,7 +710,7 @@ export default function Dashboard(){
                                 <input
                                     type="text"
                                     className="form-control"
-                                    placeholder="Ingrese CUIL"
+                                    placeholder="Ingrese CUIL del empleado"
                                     {...register("cuil")}
                                     onBlur={async (e) => {
                                     const cuil = e.target.value;                       
@@ -751,46 +828,106 @@ export default function Dashboard(){
                                 />
                             <small className="text-danger">{ errors.payslip_url_pdf?.message }</small>
                         </div>
-                        <button type="submit" className="btn btn-success w-100 mb-5">
-                            { editId  ? "Actualizar carga" : "Cargar"}
-                        </button>
+                            <button 
+                                type="submit" 
+                                className={`w-100 mb-5 ${editId ? "btn btn-warning" : "btn btn-success"}`}
+                                >
+                                { editId ? "Actualizar carga" : "Cargar" }
+                            </button>
                         </form> 
                     </>
                     ) : (
-                        <div className="mb-3">
-                             <h5> Nombre y Apellido: {userProfile?.name} { userProfile?.lastName }</h5> 
-                             <h5> CUIL: {userProfile?.cuil}</h5> 
+                        <div className="card p-3 mb-3 shadow-sm" style={{ maxWidth: "400px" }}>
+                            <h5 className="card-title mb-3">Usuario</h5>
+                            <div className="mb-2">
+                                <strong>Nombre y Apellido:</strong> {userProfile?.name} {userProfile?.lastName}
+                            </div>
+                            {/* <div className="mb-2">
+                                <strong>CUIL:</strong> {userProfile?.cuil}
+                            </div> */}
+                            <div>
+                                <strong>Email:</strong> {userProfile?.email}
+                            </div>
                         </div>
                     )
                 }
             </div>
         
              
-           <div className="col-md-9 mt-1 table-responsive">
-                <div className="d-flex gap-2 align-items-center flex-wrap mb-3">
+            <div className="col-md-9 mt-0 table-responsive">
+               
+
+               
+
+                <div className="card p-3 mb-3">
+                    <h6 className="card-title">Filtrar</h6>
                     
-                    <input 
-                    type="month" 
-                    className="form-control w-auto" 
-                    value={filterPeriod} 
-                    onChange={(e) => setFilterPeriod(e.target.value)}/>
+                    {/* Contenedor vertical para los filtros */}
+                    <div className="d-flex flex-column gap-3">
+                        
+                        {/* Filtro por período */}
+                        <div className="d-flex gap-2 align-items-center flex-wrap">
+                        <input 
+                            type="month" 
+                            className="form-control w-auto" 
+                            value={filterPeriod} 
+                            onChange={handlePeriodChange} 
+                        />
+                        <button 
+                            className="btn btn-primary d-flex align-items-center gap-2" 
+                            onClick={applyPeriodFilter}
+                        >
+                            <FaFilter /> Filtrar por período
+                        </button>
+                        <button 
+                            className="btn btn-secondary d-flex align-items-center gap-2" 
+                            onClick={clearFilter}
+                        >
+                            <FaTimes /> Quitar filtro período
+                        </button>
+                        </div>
 
-                    <button className="btn btn-primary d-flex align-items-center gap-2" onClick={applyPeriodFilter}>
-                        <FaFilter /> Filtrar
-                    </button>
+                        {/* Filtro por CUIL */}
+                        <div className="d-flex gap-2 align-items-center flex-wrap">
+                        <input 
+                            type="text" 
+                            className="form-control w-auto" 
+                            placeholder="CUIL del empleado" 
+                            value={filterCuil} 
+                            onChange={handleCuilChange} 
+                        />
+                        <button 
+                            className="btn btn-primary d-flex align-items-center gap-2" 
+                            onClick={applyCuilFilter}
+                        >
+                            <FaFilter /> Filtrar por CUIL
+                        </button>
+                        <button 
+                            className="btn btn-secondary d-flex align-items-center gap-2" 
+                            onClick={clearCuilFilter}
+                        >
+                            <FaTimes /> Quitar filtro CUIL
+                        </button>
+                        </div>
 
-                    <button className="btn btn-secondary d-flex align-items-center gap-2" onClick={clearFilter}>
-                        <FaTimes /> Quitar filtro
-                    </button>
+                    </div>
+                </div>
 
-                    <button className="btn btn-success d-flex align-items-center gap-2" onClick={exportToExcel}>
-                        <FaFileExcel /> Exportar a Excel
-                    </button>
 
-                    <button className="btn btn-danger d-flex align-items-center gap-2" onClick={exportToPDF}>
-                        <FaFilePdf /> Exportar a PDF
-                    </button>
-                </div>                  
+
+     
+                <div className="card p-3 mb-3">
+                    <h6 className="card-title">Exportar</h6>
+                    <div className="d-flex gap-2">
+                        <button className="btn btn-success d-flex align-items-center gap-2" onClick={exportToExcel}>
+                            <FaFileExcel /> Exportar a Excel
+                        </button>
+
+                        <button className="btn btn-danger d-flex align-items-center gap-2" onClick={exportToPDF}>
+                            <FaFilePdf /> Exportar a PDF
+                        </button>
+                    </div>
+                </div>
 
 
                 {userProfile?.isAdmin ? (

@@ -42,3 +42,13 @@ html, body, #__next {
   height: 100%;
   margin: 0;
 }
+
+.btn-excel {
+  background: linear-gradient(135deg, #28a745, #21a335);
+  color: white;
+}
+
+.btn-pdf {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+}

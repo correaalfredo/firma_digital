@@ -4,6 +4,8 @@ import { AppUtilsProvider } from "@/context/AppUtils";
 import { Toaster } from "react-hot-toast";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
+import 'bootstrap-icons/font/bootstrap-icons.css';
+
 
 export const metadata: Metadata = {
   title: "Firma de recibos digitales",
