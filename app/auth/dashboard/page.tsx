@@ -250,31 +250,49 @@ export default function Dashboard(){
         setIsLoading(false)
     }
 
-    //Edit Data
+    // Edit Payslip Operation con confirmación
     const handleEditData = (payslip: PayslipType) => {
 
-        setValue("cuil", payslip.cuil)
-        setValue("fullname", payslip.fullname)
-        setValue("payroll_period", payslip.payroll_period)
-        setValue("payslip_url_pdf", payslip.payslip_url_pdf)
-        setPreviewImage(payslip.payslip_url_pdf)
-        setValue("email_employee", payslip.email_employee)
-        setValue("cuit", payslip.cuit)
-        setValue("company_name", payslip.company_name)        
-        setEditId(payslip.id!)
-    }
+        Swal.fire({
+            title: "¿Estás seguro de editar?",
+            text: "Se actualizarán los datos de la carga",
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Sí, actualizar",
+            cancelButtonText: "Cancelar"
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+            
+            // Rellenar el formulario con los datos actuales
+            setValue("cuil", payslip.cuil);
+            setValue("fullname", payslip.fullname);
+            setValue("payroll_period", payslip.payroll_period);
+            setValue("payslip_url_pdf", payslip.payslip_url_pdf);
+            setPreviewImage(payslip.payslip_url_pdf);
+            setValue("email_employee", payslip.email_employee);
+            setValue("cuit", payslip.cuit);
+            setValue("company_name", payslip.company_name);        
+            setEditId(payslip.id!);
+
+            toast.success("Datos listos para editar");
+            }
+        });
+    };
 
     // Delete Payslip Operation   
     const handleDeletePayslip = (id: number) => {
 
         Swal.fire({
-            title: "Are you sure?", //Hacer similar para el update!!! Es fundamenteal!!! Cambiar lo que está en ingles!
-            text: "You won't be able to revert this!",
+            title: "¿Estás seguro?",  
+            text: "¡No podrás revertir esto!",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#3085d6",
             cancelButtonColor: "#d33",
-            confirmButtonText: "Yes, delete it!"
+            confirmButtonText: "Sí, eliminar",
+            cancelButtonText: "Cancelar"
             }).then(async (result) => {
             if (result.isConfirmed) {
                 const {data, error} = await supabase.from("payslips").delete().match({
