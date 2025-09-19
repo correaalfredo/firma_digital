@@ -18,7 +18,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFilter, FaTimes, FaFileExcel, FaFilePdf } from "react-icons/fa";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
- 
+
  
 
 interface  PayslipType {
@@ -873,80 +873,86 @@ export default function Dashboard(){
         
              
             <div className="col-md-9 mt-0 table-responsive">
-               
-
-               
-
-                <div className="card p-3 mb-3">
-                    <h6 className="card-title">Filtrar</h6>
-                    
-                    {/* Contenedor vertical para los filtros */}
-                    <div className="d-flex flex-column gap-3">
-                        
-                        {/* Filtro por período */}
-                        <div className="d-flex gap-2 align-items-center flex-wrap">
-                        <input 
-                            type="month" 
-                            className="form-control w-auto" 
-                            value={filterPeriod} 
-                            onChange={handlePeriodChange} 
-                        />
-                        <button 
-                            className="btn btn-primary d-flex align-items-center gap-2" 
-                            onClick={applyPeriodFilter}
-                        >
-                            <FaFilter /> Filtrar por período
-                        </button>
-                        <button 
-                            className="btn btn-secondary d-flex align-items-center gap-2" 
-                            onClick={clearFilter}
-                        >
-                            <FaTimes /> Quitar filtro período
-                        </button>
+                
+                <div className="row">
+                    {/* Card 1 */}
+                    <div className="col-md-6">
+                        <div className="card p-3 mb-3">
+                        <h6 className="card-title">Filtrar por período</h6>
+                        <div className="d-flex flex-column gap-3">
+                            <div className="d-flex gap-2 align-items-center flex-wrap">
+                            <input 
+                                type="month" 
+                                className="form-control form-control-sm w-50" 
+                                value={filterPeriod} 
+                                onChange={handlePeriodChange} 
+                            />
+                            <button 
+                                className="btn btn-primary btn-sm d-flex align-items-center gap-2" 
+                                onClick={applyPeriodFilter}
+                            >
+                                <FaFilter /> Filtrar
+                            </button>
+                            <button 
+                                className="btn btn-secondary btn-sm d-flex align-items-center gap-2" 
+                                onClick={clearFilter}
+                            >
+                                <FaTimes /> Quitar
+                            </button>
+                            </div>
                         </div>
-
-                        {/* Filtro por CUIL */}
-                        <div className="d-flex gap-2 align-items-center flex-wrap">
-                        <input 
-                            type="text" 
-                            className="form-control w-auto" 
-                            placeholder="CUIL del empleado" 
-                            value={filterCuil} 
-                            onChange={handleCuilChange} 
-                        />
-                        <button 
-                            className="btn btn-primary d-flex align-items-center gap-2" 
-                            onClick={applyCuilFilter}
-                        >
-                            <FaFilter /> Filtrar por CUIL
-                        </button>
-                        <button 
-                            className="btn btn-secondary d-flex align-items-center gap-2" 
-                            onClick={clearCuilFilter}
-                        >
-                            <FaTimes /> Quitar filtro CUIL
-                        </button>
                         </div>
-
                     </div>
+
+                    {/* Card 2 (solo admins) */}
+                    {isUserAdmin && (
+                        <div className="col-md-6">
+                        <div className="card p-3 mb-3">
+                            <h6 className="card-title">Filtrar por CUIL</h6>
+                            <div className="d-flex flex-column gap-3">
+                            <div className="d-flex gap-2 align-items-center flex-wrap">
+                                <input 
+                                type="text" 
+                                className="form-control form-control-sm w-50" 
+                                placeholder="CUIL del empleado" 
+                                value={filterCuil} 
+                                onChange={handleCuilChange} 
+                                />
+                                <button 
+                                className="btn btn-primary btn-sm d-flex align-items-center gap-2" 
+                                onClick={applyCuilFilter}
+                                >
+                                <FaFilter /> Filtrar
+                                </button>
+                                <button 
+                                className="btn btn-secondary btn-sm d-flex align-items-center gap-2" 
+                                onClick={clearCuilFilter}
+                                >
+                                <FaTimes /> Quitar
+                                </button>
+                            </div>
+                            </div>
+                        </div>
+                        </div>
+                    )}
                 </div>
 
-
-
-     
-                <div className="card p-3 mb-3">
-                    <h6 className="card-title">Exportar</h6>
-                    <div className="d-flex gap-2">
-                        <button className="btn btn-success d-flex align-items-center gap-2" onClick={exportToExcel}>
+                    {/* Exportar en otra fila */}
+                    <div className="row">
+                    <div className="col-md-6">
+                        <div className="card p-3 mb-3">
+                        <h6 className="card-title">Exportar</h6>
+                        <div className="d-flex gap-2">
+                            <button className="btn btn-success btn-sm d-flex align-items-center gap-2" onClick={exportToExcel}>
                             <FaFileExcel /> Exportar a Excel
-                        </button>
-
-                        <button className="btn btn-danger d-flex align-items-center gap-2" onClick={exportToPDF}>
+                            </button>
+                            <button className="btn btn-danger btn-sm d-flex align-items-center gap-2" onClick={exportToPDF}>
                             <FaFilePdf /> Exportar a PDF
-                        </button>
+                            </button>
+                        </div>
+                        </div>
                     </div>
-                </div>
-
+                    </div>  
 
                 {userProfile?.isAdmin ? (
                          <h3>Recibos de sueldos enviados</h3>                     
