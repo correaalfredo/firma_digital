@@ -71,7 +71,7 @@ export default function Dashboard(){
     const [cuilEncontrado, setCuilEncontrado] = useState(false);
     const [filterPeriod, setFilterPeriod] = useState(""); // formato "YYYY-MM"
     const [filterCuil, setFilterCuil] = useState("");
-    
+    const [pdfFileName, setPdfFileName] = useState<string | null>(null);
 
     const {setAuthToken, setIsLoggedIn, isLoggedIn, setUserProfile, setIsLoading} = myAppHook()
     const router = useRouter();
@@ -841,10 +841,19 @@ export default function Dashboard(){
                                         const file = e.target.files?.[0];
                                         if (file) {
                                             setValue("payslip_url_pdf", file, { shouldValidate: true }); // <-- importante
+                                            setPdfFileName(file.name);   // 👈 guarda el nombre
+                                        }else{
+                                            setPdfFileName(null);
                                         }
                                     }}
                                 />
                             <small className="text-danger">{ errors.payslip_url_pdf?.message }</small>
+                            {/* 👇 mostramos el nombre solo si existe */}
+                            {pdfFileName && (
+                                <div className="mt-2 text-success">
+                                Archivo seleccionado: <strong>{pdfFileName}</strong>
+                                </div>
+                            )}
                         </div>
                             <button 
                                 type="submit" 
@@ -969,6 +978,7 @@ export default function Dashboard(){
                             <th>Apellido&nbsp;y&nbsp;nombre</th>  
                             <th>¿Firmado?</th>
                             <th>Recibo</th>
+                            <th>Nombre PDF</th>
                             <th className="text-center">Acciones</th>
                             </tr>
                         </thead>
@@ -979,10 +989,8 @@ export default function Dashboard(){
                                             <td>{ singlePayslip.payroll_period }</td>
                                             <td>{ `${ singlePayslip.cuit } - ${ singlePayslip.company_name }` }</td>
                                             <td>{ singlePayslip.cuil }</td>
-                                            <td>{ singlePayslip.fullname }</td> 
+                                            <td>{ singlePayslip.fullname }</td>                                             
                                             <td>{ singlePayslip.signed ? "Sí" : "No" }</td>  
-
-
                                             <td className="text-center">                                       
                                                 {singlePayslip.payslip_url_pdf ? (
                                                     userProfile?.isAdmin ? (
@@ -1014,6 +1022,8 @@ export default function Dashboard(){
                                                     "--"
                                                     )}
                                             </td>
+                                            <td>{ singlePayslip.pdf_name }</td> 
+
 
                                             {userProfile?.isAdmin ? (
                                                     <td className="d-flex">
