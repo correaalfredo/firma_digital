@@ -872,7 +872,7 @@ export default function Dashboard(){
             </div>
         
              
-            <div className="col-md-9 mt-0 table-responsive">
+            <div className="col-md-9 mt-0 ">
                 
                 <div className="row">
                     {/* Card 1 */}
@@ -959,84 +959,85 @@ export default function Dashboard(){
                     ) : (<h3>Recibos de sueldos</h3>)
                 }
 
-                
-                <table className="table table-bordered mb-5">
-                <thead>
-                    <tr>
-                    <th>Períodos</th>
-                    <th>Empleador</th>   
-                    <th>CUIL</th>  
-                    <th>Apellido&nbsp;y&nbsp;nombre</th>  
-                    <th>¿Firmado?</th>
-                    <th>Recibo</th>
-                    <th className="text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {
-                        payslips ?  payslips.map( (singlePayslip, index) => ( 
-                            <tr key={ index }>
-                                    <td>{ singlePayslip.payroll_period }</td>
-                                    <td>{ `${ singlePayslip.cuit } - ${ singlePayslip.company_name }` }</td>
-                                    <td>{ singlePayslip.cuil }</td>
-                                    <td>{ singlePayslip.fullname }</td> 
-                                    <td>{ singlePayslip.signed ? "Sí" : "No" }</td>  
-
-
-                                     <td className="text-center">                                       
-                                        {singlePayslip.payslip_url_pdf ? (
-                                            userProfile?.isAdmin ? (
-                                                // 🔹 Si es Admin → muestra el link directo al PDF
-                                                <a
-                                                href={singlePayslip.payslip_url_pdf}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                >
-                                                <img
-                                                    src="/logo_pdf.png"
-                                                    alt="Ver PDF"
-                                                    className="img-fluid"
-                                                    style={{ maxWidth: "30px" }}
-                                                />
-                                                </a>
-                                            ) : (
-                                                // 🔹 Si NO es Admin → botón que abre el PDF con marca de agua
-                                                <button
-                                                className="btn btn-sm btn-info"
-                                                onClick={() =>
-                                                    openPdfWithWatermark(singlePayslip.payslip_url_pdf as string)
-                                                }
-                                                >
-                                                Ver PDF
-                                                </button>
-                                            )
-                                            ) : (
-                                            "--"
-                                            )}
-                                    </td>
-
-                                    {userProfile?.isAdmin ? (
-                                            <td className="d-flex">
-                                                <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singlePayslip)}>Editar</button>
-                                                <button className="btn btn-danger btn-sm" onClick={() => handleDeletePayslip(singlePayslip.id!)}>Borrar</button>
-                                            </td>
-                                            ):( <td className="d-flex">
-                                                    {/* <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singlePayslip)}>Ver</button> */}
-                                                    <button className="btn btn-danger btn-sm" onClick={() => handleSignedPayslip(singlePayslip.id!)}>Firmar y Descargar</button>
-                                                </td>
-                                              )
-                                    }        
-                            </tr>
-                        ) )   : (
+                <div className="mt-0 table table-responsive">
+                    <table className="table table-bordered mb-5">
+                        <thead>
                             <tr>
-                                <td colSpan={5} className="text-center">Archivos no encontrados.</td>
+                            <th>Períodos</th>
+                            <th>Empleador</th>   
+                            <th>CUIL</th>  
+                            <th>Apellido&nbsp;y&nbsp;nombre</th>  
+                            <th>¿Firmado?</th>
+                            <th>Recibo</th>
+                            <th className="text-center">Acciones</th>
                             </tr>
-                        )
-                    }
-                    
-                   
-                </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {
+                                payslips ?  payslips.map( (singlePayslip, index) => ( 
+                                    <tr key={ index }>
+                                            <td>{ singlePayslip.payroll_period }</td>
+                                            <td>{ `${ singlePayslip.cuit } - ${ singlePayslip.company_name }` }</td>
+                                            <td>{ singlePayslip.cuil }</td>
+                                            <td>{ singlePayslip.fullname }</td> 
+                                            <td>{ singlePayslip.signed ? "Sí" : "No" }</td>  
+
+
+                                            <td className="text-center">                                       
+                                                {singlePayslip.payslip_url_pdf ? (
+                                                    userProfile?.isAdmin ? (
+                                                        // 🔹 Si es Admin → muestra el link directo al PDF
+                                                        <a
+                                                        href={singlePayslip.payslip_url_pdf}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        >
+                                                        <img
+                                                            src="/logo_pdf.png"
+                                                            alt="Ver PDF"
+                                                            className="img-fluid"
+                                                            style={{ maxWidth: "30px" }}
+                                                        />
+                                                        </a>
+                                                    ) : (
+                                                        // 🔹 Si NO es Admin → botón que abre el PDF con marca de agua
+                                                        <button
+                                                        className="btn btn-sm btn-info"
+                                                        onClick={() =>
+                                                            openPdfWithWatermark(singlePayslip.payslip_url_pdf as string)
+                                                        }
+                                                        >
+                                                        Ver PDF
+                                                        </button>
+                                                    )
+                                                    ) : (
+                                                    "--"
+                                                    )}
+                                            </td>
+
+                                            {userProfile?.isAdmin ? (
+                                                    <td className="d-flex">
+                                                        <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singlePayslip)}>Editar</button>
+                                                        <button className="btn btn-danger btn-sm" onClick={() => handleDeletePayslip(singlePayslip.id!)}>Borrar</button>
+                                                    </td>
+                                                    ):( <td className="d-flex">
+                                                            {/* <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singlePayslip)}>Ver</button> */}
+                                                            <button className="btn btn-danger btn-sm" onClick={() => handleSignedPayslip(singlePayslip.id!)}>Firmar y Descargar</button>
+                                                        </td>
+                                                    )
+                                            }        
+                                    </tr>
+                                ) )   : (
+                                    <tr>
+                                        <td colSpan={5} className="text-center">Archivos no encontrados.</td>
+                                    </tr>
+                                )
+                            }
+                            
+                        
+                        </tbody>
+                    </table>
+                </div>           
             </div>
             </div>
         </div>
