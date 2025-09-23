@@ -18,8 +18,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFilter, FaTimes, FaFileExcel, FaFilePdf } from "react-icons/fa";
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
-
- 
+import { Table, Pagination } from "react-bootstrap";
 
 interface  PayslipType {
   id: number,
@@ -72,6 +71,9 @@ export default function Dashboard(){
     const [filterPeriod, setFilterPeriod] = useState(""); // formato "YYYY-MM"
     const [filterCuil, setFilterCuil] = useState("");
     const [pdfFileName, setPdfFileName] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10); // cantidad de filas por página
+
 
     const {setAuthToken, setIsLoggedIn, isLoggedIn, setUserProfile, setIsLoading} = myAppHook()
     const router = useRouter();
@@ -313,7 +315,7 @@ export default function Dashboard(){
 
     const applyPeriodFilter = async () => {
         if (!userId) return;
-
+        setCurrentPage(1); // siempre que cambie el filtro
         let query 
         if (isUserAdmin){
             (query = supabase.from("payslips").select("*").eq("user_id", userId)
@@ -634,7 +636,7 @@ export default function Dashboard(){
 
     const applyCuilFilter = async () => {
         if (!userId) return;
-
+        setCurrentPage(1); // siempre que cambie el filtro
         // 🔹 Validar CUIL antes de la consulta
         const filterCuilSchema = yup.object().shape({
             cuil: yup
@@ -706,6 +708,10 @@ export default function Dashboard(){
         setFilterPeriod(""); // Limpiar el periodo cuando se filtra por CUIL
     };
 
+    // --- PAGINACIÓN ---
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentPayslips = payslips ? payslips.slice(indexOfFirstItem, indexOfLastItem) : [];
 
 
     const { userProfile } = myAppHook();
@@ -969,7 +975,8 @@ export default function Dashboard(){
                 }
 
                 <div className="mt-0 table table-responsive">
-                    <table className="table table-bordered mb-5">
+                    
+                    <Table bordered hover className="table table-bordered mb-5">
                         <thead>
                             <tr>
                             <th>Períodos</th>
@@ -978,19 +985,19 @@ export default function Dashboard(){
                             <th>Apellido&nbsp;y&nbsp;nombre</th>  
                             <th>¿Firmado?</th>
                             <th>Recibo</th>
-                            <th>Nombre PDF</th>
+                            <th style={{ minWidth: "300px", whiteSpace: "normal" }}>Nombre PDF</th>
                             <th className="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {
-                                payslips ?  payslips.map( (singlePayslip, index) => ( 
+                                payslips ?  currentPayslips.map( (singlePayslip, index) => ( 
                                     <tr key={ index }>
                                             <td>{ singlePayslip.payroll_period }</td>
                                             <td>{ `${ singlePayslip.cuit } - ${ singlePayslip.company_name }` }</td>
                                             <td>{ singlePayslip.cuil }</td>
                                             <td>{ singlePayslip.fullname }</td>                                             
-                                            <td>{ singlePayslip.signed ? "Sí" : "No" }</td>  
+                                            <td><strong>{ singlePayslip.signed ? "Sí" : "No" }</strong></td>     
                                             <td className="text-center">                                       
                                                 {singlePayslip.payslip_url_pdf ? (
                                                     userProfile?.isAdmin ? (
@@ -1023,8 +1030,6 @@ export default function Dashboard(){
                                                     )}
                                             </td>
                                             <td>{ singlePayslip.pdf_name }</td> 
-
-
                                             {userProfile?.isAdmin ? (
                                                     <td className="d-flex">
                                                         <button className="btn btn-primary btn-sm me-2" onClick={() => handleEditData(singlePayslip)}>Editar</button>
@@ -1046,13 +1051,35 @@ export default function Dashboard(){
                             
                         
                         </tbody>
-                    </table>
+                    </Table>
+                    {payslips && payslips.length > itemsPerPage && (
+                        <Pagination className="justify-content-center">
+                            <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
+                            <Pagination.Prev onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} />
+                            
+                            {Array.from({ length: Math.ceil(payslips.length / itemsPerPage) }, (_, idx) => (
+                            <Pagination.Item 
+                                key={idx + 1} 
+                                active={currentPage === idx + 1} 
+                                onClick={() => setCurrentPage(idx + 1)}
+                            >
+                                {idx + 1}
+                            </Pagination.Item>
+                            ))}
+
+                            <Pagination.Next 
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(payslips.length / itemsPerPage)))} 
+                            disabled={currentPage === Math.ceil(payslips.length / itemsPerPage)} 
+                            />
+                            <Pagination.Last 
+                            onClick={() => setCurrentPage(Math.ceil(payslips.length / itemsPerPage))} 
+                            disabled={currentPage === Math.ceil(payslips.length / itemsPerPage)} 
+                            />
+                        </Pagination>
+                        )}
                 </div>           
             </div>
             </div>
         </div>
-
-                       
-            
     </>
 }
