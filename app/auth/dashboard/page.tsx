@@ -1026,7 +1026,7 @@ export default function Dashboard(){
                                             <td>{ singlePayslip.fullname }</td>                                             
                                             <td className="text-center align-middle"> 
                                                 <strong className={singlePayslip.signed ? "text-success" : "text-danger"}>
-                                                    {singlePayslip.signed ? "Sí" : "No"}
+                                                    {singlePayslip.signed ? "Firmado✔️" : "Pendiente❌"}
                                                 </strong>
                                             </td>     
                                             <td className="text-center">                                       
