@@ -723,257 +723,284 @@ export default function Dashboard(){
         <div className="container mt-5">
             <div className="row">
             
-            <div className="col-md-3">
-                {userProfile?.isAdmin ? (
-                    <>
-                        <h3>{editId ? "Editar recibo de sueldo" : "Cargar recibo de sueldo"}</h3>
-                        <form onSubmit={handleSubmit(onFormSubmit)}>
-                            
-                            <div className="mb-3">
-                                <label className="form-label">CUIL</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    placeholder="Ingrese CUIL del empleado"
-                                    {...register("cuil")}
-                                    onBlur={async (e) => {
-                                    const cuil = e.target.value;                       
-                                    if (cuil.length === 11) {
-                                        // Buscar en la tabla de empleados
-                                        const { data, error } = await supabase
-                                        .from("payslips")
-                                        .select("fullname, email_employee, cuit, company_name")
-                                        .eq("cuil", cuil)
-                                        .limit(1)
-                                        .single();
+                <div className={userProfile?.isAdmin ? "col-md-12" : "col-md-3"}>
+                    {userProfile?.isAdmin ? (
+                        <>
+                            <h3>{editId ? "Editar recibo de sueldo" : "Cargar recibo de sueldo"}</h3>
+                            <form onSubmit={handleSubmit(onFormSubmit)}>
+                                <div className="card p-3 mb-3">
+                                    <h5 className="card-title mb-3">Datos del Empleado</h5>
+                                    <div className="row">
+                                        <div className="col-md-3 mb-3">
+                                            {/* cuil */}
+                                            <div className="mb-3">
+                                                <label className="form-label">CUIL</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="Ingrese CUIL del empleado"
+                                                    {...register("cuil")}
+                                                    onBlur={async (e) => {
+                                                    const cuil = e.target.value;                       
+                                                    if (cuil.length === 11) {
+                                                        // Buscar en la tabla de empleados
+                                                        const { data, error } = await supabase
+                                                        .from("payslips")
+                                                        .select("fullname, email_employee, cuit, company_name")
+                                                        .eq("cuil", cuil)
+                                                        .limit(1)
+                                                        .single();
 
-                                        if (error && !editId) {  
-                                            toast.error("CUIL no encontrado");
-                                            /* setValue("fullname", ""); // limpio si no existe
-                                            setValue("email_employee", ""); // limpio si no existe
-                                            setValue("cuit", ""); // limpio si no existe
-                                            setValue("company_name", ""); // limpio si no existe */
-                                            setCuilEncontrado(false);   // 👉 editable
-                                        } else {
-                                            // Concatenar nombre y apellido
-                                            const nombreCompleto = `${data.fullname}`;
-                                            setValue("fullname", nombreCompleto);
-                                           
-                                            // email del empleado
-                                            const email = `${data.email_employee}`;
-                                            setValue("email_employee", email);
+                                                        if (error && !editId) {  
+                                                            toast.error("CUIL no encontrado");
+                                                            /* setValue("fullname", ""); // limpio si no existe
+                                                            setValue("email_employee", ""); // limpio si no existe
+                                                            setValue("cuit", ""); // limpio si no existe
+                                                            setValue("company_name", ""); // limpio si no existe */
+                                                            setCuilEncontrado(false);   // 👉 editable
+                                                        } else {
+                                                            // Concatenar nombre y apellido
+                                                            const nombreCompleto = `${data.fullname}`;
+                                                            setValue("fullname", nombreCompleto);
+                                                        
+                                                            // email del empleado
+                                                            const email = `${data.email_employee}`;
+                                                            setValue("email_employee", email);
 
-                                            // CUIT del empleador
-                                            const cuit_empleador = `${data.cuit}`;
-                                            setValue("cuit", cuit_empleador);
+                                                            // CUIT del empleador
+                                                            const cuit_empleador = `${data.cuit}`;
+                                                            setValue("cuit", cuit_empleador);
 
-                                            // Denominación del empleador
-                                            const denominacion_empleador = `${data.company_name}`;
-                                            setValue("company_name", denominacion_empleador);
+                                                            // Denominación del empleador
+                                                            const denominacion_empleador = `${data.company_name}`;
+                                                            setValue("company_name", denominacion_empleador);
 
-                                            setCuilEncontrado(true);    // 👉 bloquea edición
-                                        }
-                                    }
-                                    }}
-                                />
-                                <small className="text-danger">{errors.cuil?.message}</small>
-                            </div>
+                                                            setCuilEncontrado(true);    // 👉 bloquea edición
+                                                        }
+                                                    }
+                                                    }}
+                                                />
+                                                <small className="text-danger">{errors.cuil?.message}</small>
+                                            </div>
+                                        </div>    
+                                        <div className="col-md-3 mb-3">   
+                                            {/* fullname */}           
+                                            <div className="mb-3">
+                                                <label className="form-label">Nombre y Apellido del Empleado</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    {...register("fullname")}
+                                                    readOnly={cuilEncontrado && !editId}   // ✅ ahora depende del estado
+                                                />
+                                                <small className="text-danger">{errors.fullname?.message}</small>
+                                            </div>        
+                                        </div> 
+                                        <div className="col-md-3 mb-3">                  
+                                            {/* email_employee */}                            
+                                            <div className="mb-3">
+                                                <label className="form-label">Correo Electrónico del Empleado</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    {...register("email_employee")}
+                                                    readOnly={cuilEncontrado && !editId}   // ✅ editable si no lo encontró
+                                                />
+                                                <small className="text-danger">{errors.email_employee?.message}</small>
+                                            </div>
+                                        </div>  
+                                        <div className="col-md-3 mb-3">
+                                            {/* cuit */}                            
+                                            <div className="mb-3">
+                                                <label className="form-label">CUIT del Empleador</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    {...register("cuit")}
+                                                    readOnly={cuilEncontrado && !editId}   // ✅ editable si no lo encontró
+                                                />
+                                                <small className="text-danger">{errors.cuit?.message}</small>
+                                            </div>     
+                                        </div>   
+                                    </div>    
+                                    
+                                    <div className="row">
+                                        <div className="col-md-3 mb-3">               
+                                            {/* company_name */}                            
+                                            <div className="mb-3">
+                                                <label className="form-label">Denominación del Empleador</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    {...register("company_name")}
+                                                    readOnly={cuilEncontrado && !editId}   // ✅ editable si no lo encontró
+                                                />
+                                                <small className="text-danger">{errors.company_name?.message}</small>
+                                            </div>
+                                        </div>  
+                                        <div className="col-md-3 mb-3">                
+                                            {/* period */}  
+                                            <div className="mb-3">
+                                                <label className="form-label">Periodo de liquidación</label>
+                                                <input
+                                                    type="month"
+                                                    className="form-control"
+                                                    {...register("payroll_period")}
+                                                />
+                                                <small className="text-danger">{ errors.payroll_period?.message }</small>
+                                            </div>
+                                        </div>  
+                                        <div className="col-md-6 mb-3">         
+                                            {/* PDF */}  
+                                            <div className="mb-3">
+                                                <label className="form-label">Recibo de sueldo (PDF)</label>
 
-                            <div className="mb-3">
-                                <label className="form-label">Nombre y Apellido del Empleado</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    {...register("fullname")}
-                                    readOnly={cuilEncontrado && !editId}   // ✅ ahora depende del estado
-                                />
-                                <small className="text-danger">{errors.fullname?.message}</small>
-                            </div>        
+                                                    <input
+                                                        type="file"
+                                                        className="form-control"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                setValue("payslip_url_pdf", file, { shouldValidate: true }); // <-- importante
+                                                                setPdfFileName(file.name);   // 👈 guarda el nombre
+                                                            }else{
+                                                                setPdfFileName(null);
+                                                            }
+                                                        }}
+                                                    />
+                                                <small className="text-danger">{ errors.payslip_url_pdf?.message }</small>
+                                                {/* 👇 mostramos el nombre solo si existe */}
+                                                {pdfFileName && (
+                                                    <div className="mt-2 text-success">
+                                                    Archivo seleccionado: <strong>{pdfFileName}</strong>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>                                           
+                                    </div>  
 
-                            {/* email_employee */}                            
-                            <div className="mb-3">
-                                <label className="form-label">Correo Electrónico del Empleado</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    {...register("email_employee")}
-                                    readOnly={cuilEncontrado && !editId}   // ✅ editable si no lo encontró
-                                />
-                                <small className="text-danger">{errors.email_employee?.message}</small>
-                            </div>
-
-                            {/* cuit */}                            
-                            <div className="mb-3">
-                                <label className="form-label">CUIT del Empleador</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    {...register("cuit")}
-                                    readOnly={cuilEncontrado && !editId}   // ✅ editable si no lo encontró
-                                />
-                                <small className="text-danger">{errors.cuit?.message}</small>
-                            </div>
-
-                             {/* company_name */}                            
-                            <div className="mb-3">
-                                <label className="form-label">Denominación del Empleador</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    {...register("company_name")}
-                                    readOnly={cuilEncontrado && !editId}   // ✅ editable si no lo encontró
-                                />
-                                <small className="text-danger">{errors.company_name?.message}</small>
-                            </div>
+                                    <div className="col-md-3 mb-0 mt-0">         
+                                            <button 
+                                                type="submit" 
+                                                className={`w-100 mb-0 ${editId ? "btn btn-warning" : "btn btn-success"}`}
+                                                >
+                                                { editId ? "Actualizar carga" : "Cargar" }
+                                            </button>
+                                    </div> 
+                                </div> 
 
 
-
-                        <div className="mb-3">
-                        <label className="form-label">Periodo de liquidación</label>
-                        <input
-                            type="month"
-                            className="form-control"
-                            {...register("payroll_period")}
-                        />
-                        <small className="text-danger">{ errors.payroll_period?.message }</small>
-                        </div>
-                        <div className="mb-3">
-                            <label className="form-label">Recibo de sueldo (PDF)</label>
-
-                                <input
-                                    type="file"
-                                    className="form-control"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                            setValue("payslip_url_pdf", file, { shouldValidate: true }); // <-- importante
-                                            setPdfFileName(file.name);   // 👈 guarda el nombre
-                                        }else{
-                                            setPdfFileName(null);
-                                        }
-                                    }}
-                                />
-                            <small className="text-danger">{ errors.payslip_url_pdf?.message }</small>
-                            {/* 👇 mostramos el nombre solo si existe */}
-                            {pdfFileName && (
-                                <div className="mt-2 text-success">
-                                Archivo seleccionado: <strong>{pdfFileName}</strong>
+                            </form> 
+                        </>
+                        ) : (
+                            <div className="card p-3 mb-3 shadow-sm" style={{ maxWidth: "400px" }}>
+                                <h5 className="card-title mb-3">Usuario</h5>
+                                <div className="mb-2">
+                                    <strong>Nombre y Apellido:</strong> {userProfile?.name} {userProfile?.lastName}
                                 </div>
-                            )}
-                        </div>
-                            <button 
-                                type="submit" 
-                                className={`w-100 mb-5 ${editId ? "btn btn-warning" : "btn btn-success"}`}
-                                >
-                                { editId ? "Actualizar carga" : "Cargar" }
-                            </button>
-                        </form> 
-                    </>
-                    ) : (
-                        <div className="card p-3 mb-3 shadow-sm" style={{ maxWidth: "400px" }}>
-                            <h5 className="card-title mb-3">Usuario</h5>
-                            <div className="mb-2">
-                                <strong>Nombre y Apellido:</strong> {userProfile?.name} {userProfile?.lastName}
+                                {/* <div className="mb-2">
+                                    <strong>CUIL:</strong> {userProfile?.cuil}
+                                </div> */}
+                                <div>
+                                    <strong>Email:</strong> {userProfile?.email}
+                                </div>
                             </div>
-                            {/* <div className="mb-2">
-                                <strong>CUIL:</strong> {userProfile?.cuil}
-                            </div> */}
-                            <div>
-                                <strong>Email:</strong> {userProfile?.email}
-                            </div>
-                        </div>
-                    )
-                }
-            </div>
-        
-             
-            <div className="col-md-9 mt-0 ">
+                        )
+                    }
+                </div>            
                 
-                <div className="row">
-                    {/* Card 1 */}
-                    <div className="col-md-6">
-                        <div className="card p-3 mb-3">
-                        <h6 className="card-title">Filtrar por período</h6>
-                        <div className="d-flex flex-column gap-3">
-                            <div className="d-flex gap-2 align-items-center flex-wrap">
-                            <input 
-                                type="month" 
-                                className="form-control form-control-sm w-50" 
-                                value={filterPeriod} 
-                                onChange={handlePeriodChange} 
-                            />
-                            <button 
-                                className="btn btn-primary btn-sm d-flex align-items-center gap-2" 
-                                onClick={applyPeriodFilter}
-                            >
-                                <FaFilter /> Filtrar
-                            </button>
-                            <button 
-                                className="btn btn-secondary btn-sm d-flex align-items-center gap-2" 
-                                onClick={clearFilter}
-                            >
-                                <FaTimes /> Quitar
-                            </button>
-                            </div>
-                        </div>
-                        </div>
-                    </div>
-
-                    {/* Card 2 (solo admins) */}
-                    {isUserAdmin && (
+                <div className="col-md-9 mt-0 ">
+                    
+                    <div className="row">
+                        {/* Card 1 */}
                         <div className="col-md-6">
-                        <div className="card p-3 mb-3">
-                            <h6 className="card-title">Filtrar por CUIL</h6>
+                            <div className="card p-3 mb-3">
+                            <h6 className="card-title">Filtrar por período</h6>
                             <div className="d-flex flex-column gap-3">
-                            <div className="d-flex gap-2 align-items-center flex-wrap">
+                                <div className="d-flex gap-2 align-items-center flex-wrap">
                                 <input 
-                                type="text" 
-                                className="form-control form-control-sm w-50" 
-                                placeholder="CUIL del empleado" 
-                                value={filterCuil} 
-                                onChange={handleCuilChange} 
+                                    type="month" 
+                                    className="form-control form-control-sm w-50" 
+                                    value={filterPeriod} 
+                                    onChange={handlePeriodChange} 
                                 />
                                 <button 
-                                className="btn btn-primary btn-sm d-flex align-items-center gap-2" 
-                                onClick={applyCuilFilter}
+                                    className="btn btn-primary btn-sm d-flex align-items-center gap-2" 
+                                    onClick={applyPeriodFilter}
                                 >
-                                <FaFilter /> Filtrar
+                                    <FaFilter /> Filtrar
                                 </button>
                                 <button 
-                                className="btn btn-secondary btn-sm d-flex align-items-center gap-2" 
-                                onClick={clearCuilFilter}
+                                    className="btn btn-secondary btn-sm d-flex align-items-center gap-2" 
+                                    onClick={clearFilter}
                                 >
-                                <FaTimes /> Quitar
+                                    <FaTimes /> Quitar
+                                </button>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+
+                        {/* Card 2 (solo admins) */}
+                        {isUserAdmin && (
+                            <div className="col-md-6">
+                            <div className="card p-3 mb-3">
+                                <h6 className="card-title">Filtrar por CUIL</h6>
+                                <div className="d-flex flex-column gap-3">
+                                <div className="d-flex gap-2 align-items-center flex-wrap">
+                                    <input 
+                                        type="text" 
+                                        className="form-control form-control-sm w-50" 
+                                        placeholder="CUIL del empleado" 
+                                        value={filterCuil} 
+                                        onChange={handleCuilChange} 
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                applyCuilFilter();
+                                                }
+                                            }
+                                        } 
+                                    />
+                                    <button 
+                                        className="btn btn-primary btn-sm d-flex align-items-center gap-2" 
+                                        onClick={applyCuilFilter}
+                                    >
+                                        <FaFilter /> Filtrar
+                                    </button>
+                                    <button 
+                                    className="btn btn-secondary btn-sm d-flex align-items-center gap-2" 
+                                    onClick={clearCuilFilter}
+                                    >
+                                    <FaTimes /> Quitar
+                                    </button>
+                                </div>
+                                </div>
+                            </div>
+                            </div>
+                        )}
+                    </div>
+
+                        {/* Exportar en otra fila */}
+                        <div className="row">
+                        <div className="col-md-6">
+                            <div className="card p-3 mb-3">
+                            <h6 className="card-title">Exportar</h6>
+                            <div className="d-flex gap-2">
+                                <button className="btn btn-success btn-sm d-flex align-items-center gap-2" onClick={exportToExcel}>
+                                <FaFileExcel /> Exportar a Excel
+                                </button>
+                                <button className="btn btn-danger btn-sm d-flex align-items-center gap-2" onClick={exportToPDF}>
+                                <FaFilePdf /> Exportar a PDF
                                 </button>
                             </div>
                             </div>
                         </div>
-                        </div>
-                    )}
+                        </div>             
                 </div>
-
-                    {/* Exportar en otra fila */}
-                    <div className="row">
-                    <div className="col-md-6">
-                        <div className="card p-3 mb-3">
-                        <h6 className="card-title">Exportar</h6>
-                        <div className="d-flex gap-2">
-                            <button className="btn btn-success btn-sm d-flex align-items-center gap-2" onClick={exportToExcel}>
-                            <FaFileExcel /> Exportar a Excel
-                            </button>
-                            <button className="btn btn-danger btn-sm d-flex align-items-center gap-2" onClick={exportToPDF}>
-                            <FaFilePdf /> Exportar a PDF
-                            </button>
-                        </div>
-                        </div>
-                    </div>
-                    </div>  
-
+                
                 {userProfile?.isAdmin ? (
-                         <h3>Recibos de sueldos enviados</h3>                     
-                    ) : (<h3>Recibos de sueldos</h3>)
-                }
-
+                            <h3>Recibos de sueldos enviados</h3>                     
+                        ) : (<h3>Recibos de sueldos</h3>)}         
                 <div className="mt-0 table table-responsive">
                     
                     <Table bordered hover className="table table-bordered mb-5">
@@ -997,7 +1024,11 @@ export default function Dashboard(){
                                             <td>{ `${ singlePayslip.cuit } - ${ singlePayslip.company_name }` }</td>
                                             <td>{ singlePayslip.cuil }</td>
                                             <td>{ singlePayslip.fullname }</td>                                             
-                                            <td><strong>{ singlePayslip.signed ? "Sí" : "No" }</strong></td>     
+                                            <td className="text-center align-middle"> 
+                                                <strong className={singlePayslip.signed ? "text-success" : "text-danger"}>
+                                                    {singlePayslip.signed ? "Sí" : "No"}
+                                                </strong>
+                                            </td>     
                                             <td className="text-center">                                       
                                                 {singlePayslip.payslip_url_pdf ? (
                                                     userProfile?.isAdmin ? (
@@ -1077,8 +1108,8 @@ export default function Dashboard(){
                             />
                         </Pagination>
                         )}
-                </div>           
-            </div>
+                </div> 
+
             </div>
         </div>
     </>
