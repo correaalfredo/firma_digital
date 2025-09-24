@@ -15,7 +15,7 @@ export default function Profile(){
 
         {   
             userProfile ? ( 
-            <div className="container mt-5">
+            <div className="container mt-5"> 
                 <h2>Profile</h2>
                 <div className="card p-4 shadow-sm">
                     <p><strong>Nombre y Apellido:</strong> {userProfile?.name} { userProfile?.lastName }</p>                     
