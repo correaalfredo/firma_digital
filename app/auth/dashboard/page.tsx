@@ -720,7 +720,7 @@ export default function Dashboard(){
 
         <Navbar />
 
-        <div className="container mt-5">
+        <div className="container-fluid mt-5">
             <div className="row">
             
                 <div className={userProfile?.isAdmin ? "col-md-12" : "col-md-3"}>
@@ -1007,9 +1007,9 @@ export default function Dashboard(){
                         <thead>
                             <tr>
                             <th>Períodos</th>
-                            <th>Empleador</th>   
-                            <th>CUIL</th>  
-                            <th>Apellido&nbsp;y&nbsp;nombre</th>  
+                            <th>CUIT&nbsp;y&nbsp;nombre&nbsp;del&nbsp;empleador</th>   
+                            <th>CUIL&nbsp;del&nbsp;empleado</th>  
+                            <th>Nombre&nbsp;y&nbsp;apellido&nbsp;del&nbsp;empleado</th>  
                             <th>¿Firmado?</th>
                             <th>Recibo</th>
                             <th style={{ minWidth: "300px", whiteSpace: "normal" }}>Nombre PDF</th>
